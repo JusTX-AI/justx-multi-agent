@@ -1,0 +1,21 @@
+[
+    {
+        "conversation": [
+            {"role": "user", "content": "What's the contract address for the GOAT coin?"}
+        ],
+        "function": "transfer_to_dexscreener_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"}
+        ],
+        "function": "transfer_to_send_sol_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "Tell me about the weather today"}
+        ],
+        "function": "None"
+    }
+    
+]

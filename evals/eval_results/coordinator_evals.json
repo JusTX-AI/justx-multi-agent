@@ -1,0 +1,431 @@
+[
+    {
+        "id": "ba7c3201-d329-4213-b1ea-b074ce8abf22",
+        "timestamp": "2024-10-26T22:39:15.340912",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the PEPE coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to my friend"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "Please provide the recipient's Solana address, and I'll assist you in sending 1 SOL.",
+                    "Please provide the blockchain you're using (e.g., Solana) and your friend's wallet address so I can help you with the transfer.",
+                    "Please provide the recipient's Solana address, so I can assist you in sending 1 SOL.",
+                    "Could you please provide the recipient's Solana wallet address so I can assist you with sending 1 SOL?",
+                    "Please provide the recipient's wallet address so that I can assist you with sending 1 SOL to your friend."
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm specialized in handling requests related to meme coins and token transfers. For weather information, I recommend checking a weather-specific service or app. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with meme coins and token transfers. Could you please provide more specific information or specify how I can assist you in those areas?",
+                    "I'm here to assist with meme coin details and token transfers. For weather-related information, please check a weather service or app. If you have any questions about meme coins or need to transfer tokens, feel free to ask!",
+                    "I'm here to assist with requests related to meme coins and token transfers. For weather-related inquiries, please use a weather-specific service or application. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm specialized in handling requests related to meme coins and token transfers. Unfortunately, I don't have the capability to provide weather information. Please let me know if you have any questions regarding meme coins or token transactions!"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the latest meme coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "Could you please specify the name of the meme coin you are asking about? If you don't have a specific one in mind, I can look up some popular recent meme coins for you.",
+                    "Could you please specify the name of the latest meme coin you're interested in, or if you're looking for general information about a specific meme coin? This will help me search for the relevant contract address and information.",
+                    "Could you please provide the name of the meme coin you're interested in? This will help me search for the specific contract address and details.",
+                    "Can you please provide the name of the latest meme coin you're interested in? That way, I can fetch the relevant details and contract address for you.",
+                    "Could you please provide the name of the meme coin you're interested in learning about?"
+                ],
+                "case_accuracy": "0.00%"
+            }
+        ],
+        "correct_evals": 10,
+        "total_evals": 20,
+        "overall_accuracy_percent": "50.00%"
+    },
+    {
+        "id": "29b901df-4975-4c44-aa7f-b83ba86856f2",
+        "timestamp": "2024-10-26T23:04:21.924451",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to my friend"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "To assist you with sending 1 SOL to your friend, I'll need the recipient's Solana address. Could you please provide that information?",
+                    "Please provide the recipient's Solana address, and I will help you with the transfer of 1 SOL.",
+                    "Could you please provide the recipient address to whom you want to send 1 SOL?",
+                    "Please provide the recipient's wallet address so I can proceed with the token transfer request.",
+                    "Please provide the recipient's wallet address on the Solana blockchain so that I can process the transfer for you."
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "It seems like you're asking about the weather. However, I'm specialized in handling meme coins and token transfers. For weather-related information, please refer to a weather service or app for the most accurate and up-to-date information. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with queries related to meme coins and token transfers. For weather-related information, please consult a weather-specific service or application. If you have any requests regarding meme coins or token transfers, feel free to ask!",
+                    "I'm here to help with meme coins and token transfers. For information about the weather, please check a weather service or app. If you have any questions related to meme coins or need to transfer tokens, feel free to ask!",
+                    "I'm here to assist with requests related to meme coins and token transfers. For information about the weather, please check your local weather service or use a weather website or app. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with meme coin details and token transfers. For weather-related inquiries, please consult a weather service or application. If you have questions about meme coins or need help with token transfers, feel free to ask!"
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 10,
+        "total_evals": 15,
+        "overall_accuracy_percent": "66.67%"
+    },
+    {
+        "id": "029af888-448f-4e7c-a285-07ed30332cd2",
+        "timestamp": "2024-10-26T23:05:43.107775",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I am specialized in handling requests related to meme coins and token transfers, so I'm unable to provide weather information. Please check a weather app or website for the latest updates on today's weather.",
+                    "I'm specialized in handling requests related to meme coins and token transfers. For weather-related information, please consult a weather service or application. If you have questions about meme coins or tokens, feel free to ask!",
+                    "I'm here to help with meme coin and token transfer-related inquiries. For specific weather information, please check a reliable weather website or app. If you have questions about meme coins or token transfers, feel free to ask!",
+                    "I'm here to help with meme coin details and token transfer requests. Please let me know if you have any questions related to those topics!",
+                    "I'm specialized in handling requests related to meme coins and token transfers. Unfortunately, I can't provide information about the weather. You might want to check a weather website or app for the latest updates. If you have any questions about meme coins or token transfers, feel free to ask!"
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 15,
+        "total_evals": 15,
+        "overall_accuracy_percent": "100.00%"
+    },
+    {
+        "id": "d1750f40-f422-4006-a811-01bd932b21d4",
+        "timestamp": "2024-10-26T23:09:07.835316",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm sorry, but I can't help with weather information. You might want to check a weather website or app for the most accurate and up-to-date information. If you have any questions related to meme coins or token transfers, feel free to ask!",
+                    "I'm here to assist with requests related to meme coins and token transfers. For information on the weather, I recommend checking a weather service or application. If you have any questions about meme coins or need help with token transfers, feel free to ask!",
+                    "I'm unable to provide weather updates. I am specialized in handling requests related to meme coins and token transfers. If you have any inquiries about those topics, feel free to ask!",
+                    "I'm here to help with meme coins and token transfers, so I can't provide weather information. You may want to use a weather app or website for that. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with meme coin details and token transfers. For weather-related information, please consult a weather-focused service or application. If you have questions related to meme coins or blockchain transfers, feel free to ask!"
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 15,
+        "total_evals": 15,
+        "overall_accuracy_percent": "100.00%"
+    },
+    {
+        "id": "a90cf7ac-528c-46b7-a06a-326a8ef28a5a",
+        "timestamp": "2024-10-26T23:10:03.343412",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm sorry, but I'm unable to provide real-time weather information. You might want to check a weather website or app for the latest updates on the weather in your area.",
+                    "I'm here to help with meme coins and token transfers. Could you please specify the meme coin you're interested in or let me know if you want to send tokens?",
+                    "I'm here to assist with meme coin inquiries and token transfers. For weather-related information, please check your local weather service or a weather app for the most accurate and up-to-date information. If you need help with something else, feel free to ask!",
+                    "I'm here to assist you with meme coin inquiries and token transfers. For weather-related information, please consult a weather service or application. If you have any questions about meme coins or token transfers, feel free to ask!",
+                    "I'm unable to provide real-time weather information. You can check a weather application or website for the most current updates on the weather in your location."
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 15,
+        "total_evals": 15,
+        "overall_accuracy_percent": "100.00%"
+    }
+]
