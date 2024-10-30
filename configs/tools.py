@@ -1,6 +1,6 @@
 import requests
 
-def send_sol(to_address: str, amount: float) -> str:
+def solana_send_solana(to_address: str, amount: float) -> str:
         if to_address is None or amount is None:
             raise ValueError("Both to_address and amount must be provided")
         
@@ -48,7 +48,7 @@ def send_sol(to_address: str, amount: float) -> str:
         print(f"Generated modified code: {modified_code_json}")
         return modified_code_json
 
-def send_token(to_address: str, amount: float, token_mint: str) -> str:
+def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
     if to_address is None or amount is None or token_mint is None:
             raise ValueError("to_address, amount, and token_mint must be provided")
         
@@ -123,7 +123,7 @@ def send_token(to_address: str, amount: float, token_mint: str) -> str:
     print(f"Generated modified code: {modified_code_json}")
     return modified_code_json
 
-def create_and_delegate_stake(from_address: str, amount: float, validator_identifier: str) -> str:
+def solana_create_and_delegate_stake(from_address: str, amount: float, validator_identifier: str) -> str:
         logger.debug(f"Checking validator identifier: {validator_identifier}")
         vote_account = validator_identifier
         transaction_function_template = """
@@ -232,8 +232,7 @@ def create_and_delegate_stake(from_address: str, amount: float, validator_identi
         print(f"Generated modified code: {modified_code_json}")
         return modified_code_json
 
-
-def create_stake_account(from_address: str, stake_account: str, amount: float) -> str:
+def solana_create_stake_account(from_address: str, stake_account: str, amount: float) -> str:
     transaction_function_template = """
         async (connection, web3, fromKeypair, chainConfig, Buffer) => {
           const stakeAccount = new web3.Keypair();
@@ -272,7 +271,7 @@ def create_stake_account(from_address: str, stake_account: str, amount: float) -
     print(f"Generated modified code: {modified_code_json}")
     return modified_code_json
 
-def delegate_stake(stake_account: str, vote_account: str) -> str:
+def solana_delegate_stake(stake_account: str, vote_account: str) -> str:
     transaction_function_template = """
         async (connection, web3, fromKeypair, chainConfig, Buffer) => {
           const delegateTransaction = web3.StakeProgram.delegate({
@@ -305,7 +304,7 @@ def delegate_stake(stake_account: str, vote_account: str) -> str:
     print(f"Generated modified code: {modified_code_json}")
     return modified_code_json
 
-def deactivate_stake(stake_account: str) -> str:
+def solana_deactivate_stake(stake_account: str) -> str:
     transaction_function_template = """
         async (connection, web3, fromKeypair, chainConfig, Buffer) => {
           const deactivateTransaction = web3.StakeProgram.deactivate({
@@ -337,7 +336,7 @@ def deactivate_stake(stake_account: str) -> str:
     print(f"Generated modified code: {modified_code_json}")
     return modified_code_json
 
-def withdraw_stake(stake_account: str, to_address: str, amount: float) -> str:
+def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) -> str:
     transaction_function_template = """
         async (connection, web3, fromKeypair, chainConfig, Buffer) => {
           const withdrawTransaction = web3.StakeProgram.withdraw({
