@@ -1,4 +1,6 @@
 import requests
+from configs.variables import DEV_TG_BOT_URL
+
 def transfer_to_dexscreener_agent(coin_name: str) -> str:
     """Search for a meme coin's contract address on dexscreener API."""
     
@@ -29,4 +31,17 @@ def transfer_to_dexscreener_agent(coin_name: str) -> str:
             return f"No results found for {coin_name}."
     except requests.RequestException as e:
         return f"An error occurred while fetching data for {coin_name}: {str(e)}"
+    
+def transfer_to_telegram_agent(token_address: str):
+    """Query token address to telegram bot."""
+    try:
+        url = f"{DEV_TG_BOT_URL}/send_message"
+        payload = {
+            "text": f"/c {token_address}"
+        }
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        return f"An error occurred while sending message to telegram: {str(e)}"
     
