@@ -1,6 +1,6 @@
 from swarm import Agent
 #from configs.tools import *
-from data.routines.prompts import COORDINATOR_INSTRUCTIONS, DEXSCREENER_INSTRUCTIONS, SOLANA_SEND_TOKEN_INSTRUCTIONS, SOLANA_WITHDRAW_STAKE_INSTRUCTIONS, SOLANA_CREATE_AND_DELEGATE_STAKE_INSTRUCTIONS, SOLANA_CREATE_STAKE_ACCOUNT_INSTRUCTIONS, SOLANA_DELEGATE_STAKE_INSTRUCTIONS, SOLANA_DEACTIVATE_STAKE_INSTRUCTIONS, SOLANA_SEND_SOL_INSTRUCTIONS, SOLANA_COORDINATOR_INSTRUCTIONS, SOLANA_SWAP_INSTRUCTIONS, TELEGRAM_INSTRUCTIONS
+from data.routines.prompts import COORDINATOR_INSTRUCTIONS, DEXSCREENER_INSTRUCTIONS, SOLANA_SEND_TOKEN_INSTRUCTIONS, SOLANA_WITHDRAW_STAKE_INSTRUCTIONS, SOLANA_CREATE_AND_DELEGATE_STAKE_INSTRUCTIONS, SOLANA_CREATE_STAKE_ACCOUNT_INSTRUCTIONS, SOLANA_DELEGATE_STAKE_INSTRUCTIONS, SOLANA_DEACTIVATE_STAKE_INSTRUCTIONS, SOLANA_SEND_SOL_INSTRUCTIONS, SOLANA_COORDINATOR_INSTRUCTIONS, SOLANA_SWAP_INSTRUCTIONS, TELEGRAM_INSTRUCTIONS, SOLANA_BALANCE_INSTRUCTIONS
 from configs.blockchain_agents.solana.query_agent import *
 from configs.blockchain_agents.solana.transaction_agent import *
 
@@ -46,6 +46,10 @@ def transfer_to_solana_swap_agent():
     """Transfer to solana swap agent immediately."""
     return solana_swap_agent
 
+def transfer_to_solana_balance_agent():
+    """Transfer to solana balance agent immediately."""
+    return solana_balance_agent
+
 
 #Coordinator Agent
 coordinator_agent = Agent(
@@ -72,7 +76,8 @@ solana_coordinator_agent = Agent(
         transfer_to_solana_withdraw_stake_agent,
         transfer_to_dexscreener_agent,
         transfer_to_solana_swap_agent,
-        transfer_to_telegram_agent
+        transfer_to_telegram_agent,
+        transfer_to_solana_balance_agent
     ]
 )
 solana_send_solana_agent = Agent(
@@ -80,7 +85,8 @@ solana_send_solana_agent = Agent(
     instructions=SOLANA_SEND_SOL_INSTRUCTIONS,
     functions=[
         solana_send_solana,
-        transfer_to_solana_coordinator_agent
+        transfer_to_solana_coordinator_agent,
+        transfer_to_solana_balance_agent
         
     ]
 )
@@ -92,6 +98,7 @@ solana_send_token_agent = Agent(
         transfer_to_solana_coordinator_agent,
         transfer_to_dexscreener_agent,
         transfer_to_telegram_agent,
+        transfer_to_solana_balance_agent
     ]
 )
 solana_create_and_delegate_stake_agent = Agent(
@@ -100,7 +107,8 @@ solana_create_and_delegate_stake_agent = Agent(
     functions=[
         solana_create_and_delegate_stake,
         transfer_to_solana_coordinator_agent,
-        transfer_to_telegram_agent
+        transfer_to_telegram_agent,
+        transfer_to_solana_balance_agent
     ]
 )
 solana_create_stake_account_agent = Agent(
@@ -109,7 +117,7 @@ solana_create_stake_account_agent = Agent(
     functions=[
         solana_create_stake_account,
         transfer_to_solana_coordinator_agent,
-        
+        transfer_to_solana_balance_agent
     ]
 )
 solana_delegate_stake_agent = Agent(
@@ -118,7 +126,7 @@ solana_delegate_stake_agent = Agent(
     functions=[
         solana_delegate_stake,
         transfer_to_solana_coordinator_agent,
-        
+        transfer_to_solana_balance_agent
     ]
 )
 solana_deactivate_stake_agent = Agent(
@@ -127,7 +135,7 @@ solana_deactivate_stake_agent = Agent(
     functions=[
         solana_deactivate_stake,
         transfer_to_solana_coordinator_agent,
-     
+        transfer_to_solana_balance_agent
     ]
 )
 solana_withdraw_stake_agent = Agent(
@@ -135,7 +143,8 @@ solana_withdraw_stake_agent = Agent(
     instructions=SOLANA_WITHDRAW_STAKE_INSTRUCTIONS,
     functions=[
         solana_withdraw_stake,
-        transfer_to_solana_coordinator_agent
+        transfer_to_solana_coordinator_agent,
+        transfer_to_solana_balance_agent
     ]
 )
 solana_swap_agent = Agent(
@@ -144,10 +153,20 @@ solana_swap_agent = Agent(
     functions=[
         solana_swap,
         transfer_to_solana_coordinator_agent,
-        transfer_to_telegram_agent
+        transfer_to_telegram_agent,
+        transfer_to_solana_balance_agent
     ]
 )
 
+solana_balance_agent = Agent(
+    name="Solana Balance Agent",
+    instructions=SOLANA_BALANCE_INSTRUCTIONS,
+    functions=[
+        solana_balance,
+        transfer_to_solana_coordinator_agent,
+        transfer_to_telegram_agent
+    ]
+)
 
 #Dexscreener Agent
 dexscreener_agent = Agent(

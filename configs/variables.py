@@ -1,1 +1,2 @@
 DEV_TG_BOT_URL = ""
+SOLANA_RPC_URL = ""
