@@ -1,7 +1,7 @@
 import requests
 import json
 from configs.variables import DEV_TG_BOT_URL, SOLANA_RPC_URL
-from solana.rpc.api import Client
+#from solana.rpc.api import Client
 import json
 import base64
 from datetime import datetime
