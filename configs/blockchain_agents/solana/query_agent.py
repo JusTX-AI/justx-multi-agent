@@ -1,6 +1,10 @@
 import requests
 import json
-from configs.variables import DEV_TG_BOT_URL
+from configs.variables import DEV_TG_BOT_URL, SOLANA_RPC_URL
+from solana.rpc.api import Client
+import json
+import base64
+from datetime import datetime
 
 def transfer_to_dexscreener_agent(coin_name: str) -> str:
     """Search for a meme coin's contract address on dexscreener API."""
@@ -125,3 +129,80 @@ def solana_balance(address: str) -> str:
 
     except requests.RequestException as e:
         return f"Error querying balances: {str(e)}"
+    
+
+def solana_fetch_validators():
+    # Initialize Solana client
+    solana_client = Client(SOLANA_RPC_URL)
+    
+    try:
+        # Fetch validator information
+        response = solana_client.get_vote_accounts()
+        
+        if response["result"]:
+            current_validators = response["result"]["current"]
+            delinquent_validators = response["result"]["delinquent"]
+            
+            print(f"Total Active Validators: {len(current_validators)}")
+            print(f"Total Delinquent Validators: {len(delinquent_validators)}")
+            
+            # Process active validators
+            print("\nActive Validators:")
+            for validator in current_validators:
+                # Fetch validator's config data to get the name
+                config_data = get_validator_name(solana_client, validator['nodePubkey'])
+                validator['name'] = config_data
+                print_validator_info(validator)
+            
+            # Process delinquent validators
+            print("\nDelinquent Validators:")
+            for validator in delinquent_validators:
+                # Fetch validator's config data to get the name
+                config_data = get_validator_name(solana_client, validator['nodePubkey'])
+                validator['name'] = config_data
+                print_validator_info(validator)
+                
+    except Exception as e:
+        print(f"Error fetching validator data: {str(e)}")
+
+def get_validator_name(client, validator_pubkey):
+    """Fetch validator name from config data"""
+    try:
+        # Get validator's config account
+        config_response = client.get_program_accounts(
+            "Config1111111111111111111111111111111111111",
+            encoding="base64",
+            filters=[
+                {
+                    "memcmp": {
+                        "offset": 4,
+                        "bytes": validator_pubkey
+                    }
+                }
+            ]
+        )
+        
+        if config_response["result"]:
+            # Decode config data
+            config_data = config_response["result"][0]["account"]["data"][0]
+            decoded_data = base64.b64decode(config_data)
+            
+            # Extract validator name (starts at offset 45)
+            name_length = decoded_data[44]
+            name = decoded_data[45:45+name_length].decode('utf-8')
+            return name
+        
+        return "Unknown"
+    except Exception as e:
+        return "Unknown"
+
+def print_validator_info(validator):
+    """Helper function to print validator details in a formatted way"""
+    print(f"\nValidator Name: {validator.get('name', 'Unknown')}")
+    print(f"Node Public Key: {validator['nodePubkey']}")
+    print(f"Vote Account: {validator['votePubkey']}")
+    print(f"Active Stake: {validator['activatedStake'] / 10**9:,.2f} SOL")
+    print(f"Commission: {validator['commission']}%")
+    print(f"Last Vote: {validator['lastVote']}")
+    print(f"Root Slot: {validator['rootSlot']}")
+    print(f"Credits/Epoch: {validator['epochCredits'][-1][1] if validator['epochCredits'] else 0}")

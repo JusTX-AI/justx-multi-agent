@@ -109,8 +109,7 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
             console.log("After result:",transactionSignature);
 
             return result.transactionHash;
-        
-        
+        }
         """
 
     temporary_template = transaction_function_template
@@ -124,7 +123,7 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
     return modified_code_json
 
 def solana_create_and_delegate_stake(from_address: str, amount: float, validator_identifier: str) -> str:
-        logger.debug(f"Checking validator identifier: {validator_identifier}")
+        # logger.debug(f"Checking validator identifier: {validator_identifier}")
         vote_account = validator_identifier
         transaction_function_template = """
                 async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig) => {
@@ -224,7 +223,7 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
         """
 
         temporary_template = transaction_function_template
-        modified_code = temporary_template.replace("VALIDATOR_VOTE_ACCOUNT", vote_account).replace("AMOUNT", str(float_amount))
+        modified_code = temporary_template.replace("VALIDATOR_VOTE_ACCOUNT", vote_account).replace("AMOUNT", str(amount))
         modified_code_json = {
             "modifiedCode": modified_code
         }
@@ -371,96 +370,79 @@ def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) ->
     return modified_code_json
 
 def solana_swap(input_token: str, output_token: str, amount: float, slippage: float, input_decimal: float) -> str:
+    print(f"Input Token: {input_token} ({type(input_token)})")
+    print(f"Output Token: {output_token} ({type(output_token)})")
+    print(f"Amount: {amount} ({type(amount)})")
+    print(f"Slippage: {slippage} ({type(slippage)})")
+    print(f"Input Decimal: {input_decimal} ({type(input_decimal)})")
     transaction_function_template = """
 
-
-    async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig) => {
-
-        // const tokenInfo = {
-        //   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": { symbol: "USDC", decimals: 6 },
-        //   "So11111111111111111111111111111111111111112": { symbol: "SOL", decimals: 9 },
-        // };
-      
-      
-        const inpToken = "INPUT_TOKEN" ;
-        const outToken = "OUTPUT_TOKEN" ;
-        // const amount =  AMOUNT * Math.pow(10, tokenInfo[inpToken].decimals);
-        const amount =  AMOUNT * Math.pow(10, INPUT_DECIMAL );
-        const slippage = "SLIPPAGE"
-      
-        
-      
-        console.log("Wallet",fromKeypair);
-      
-        // Get the best route for a swap
-        const quoteResponse = await (
-          await fetch(
-            `https://quote-api.jup.ag/v6/quote?inputMint=${inpToken}&outputMint=${outToken}&amount=${amount}&slippageBps=${slippage}`
-          )
-        ).json();
-      
-        console.log("QuickResposne: ",quoteResponse);
-      
-        const { swapTransaction } = await (
-          await fetch("https://quote-api.jup.ag/v6/swap", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              quoteResponse,
-              userPublicKey: fromKeypair.publicKey.toString(),
-              wrapAndUnwrapSol: true,
-            }),
-          })
-        ).json();
-      
-        console.log("swaptxn: ",swapTransaction);
-      
-        const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-      
-        const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-        transaction.sign([fromKeypair]);
-        console.log("Txn: ",transaction);
-      
-        const latestBlockHash = await connection.getLatestBlockhash();
-        console.log("after blockhash: ",latestBlockHash)
-        const simulationResult = await connection.simulateTransaction(transaction);
-      console.log("Simulation result:", simulationResult);
-      
-      if (simulationResult.value.err) {
-        throw new Error("Transaction simulation failed: " + JSON.stringify(simulationResult.value.err));
-      }
-      
-        const rawTransaction = transaction.serialize();
-        const txid = await connection.sendRawTransaction(rawTransaction, {
-          skipPreflight: true,
-          maxRetries: 2,
-        });
-        console.log("after rawtxn: ",rawTransaction,txid)
-      
-        let status = null;
-        let cnt = 15;
-        while ((status === null || status.confirmationStatus !== 'confirmed') && cnt>0) {
-        const response = await connection.getSignatureStatus(txid);
-        console.log("here ",response);
-        status = response.value;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        cnt--;
+    async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig,web3_spl) => {
+        const tokenInfo = {
+            "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": { symbol: "USDC", decimals: 6 },
+            "So11111111111111111111111111111111111111112": { symbol: "SOL", decimals: 9 },
+          };
+          const inpToken = "So11111111111111111111111111111111111111112" ;
+          const outToken = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" ;
+          const amount =  0.0001 * Math.pow(10, tokenInfo[inpToken].decimals);
+          const slippage = 50;
+          // Get the best route for a swap
+          const quoteResponse = await (
+            await fetch(
+            "https://quote-api.jup.ag/v6/quote?inputMint="+inpToken+"&outputMint="+outToken+"&amount="+amount+"&slippageBps="+slippage+""
+            )
+          ).json();
+          console.log("QuickResposne: ",quoteResponse);
+          const { swapTransaction } = await (
+            await fetch("https://quote-api.jup.ag/v6/swap", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                quoteResponse,
+                userPublicKey: fromKeypair.publicKey.toString(),
+                wrapAndUnwrapSol: true,
+              }),
+            })
+          ).json();
+          console.log("swaptxn: ",swapTransaction);
+          const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+          const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+          transaction.sign([fromKeypair]);
+          console.log("Txn: ",transaction);
+          const latestBlockHash = await connection.getLatestBlockhash();
+          console.log("after blockhash: ",latestBlockHash)
+          const simulationResult = await connection.simulateTransaction(transaction);
+          console.log("Simulation result:", simulationResult);
+        if (simulationResult.value.err) {
+          throw new Error("Transaction simulation failed: " + JSON.stringify(simulationResult.value.err));
         }
-      
-        if (status === null || status.confirmationStatus !== 'confirmed') {
-          throw new Error("Transaction not confirmed after maximum retries");
-        }
-      
-        let result = { transactionHash: txid };
-      
-        console.log("After result:", result);
-      
-        return result.transactionHash;
-      }
+          const rawTransaction = transaction.serialize();
+          const txid = await connection.sendRawTransaction(rawTransaction, {
+            skipPreflight: true,
+            maxRetries: 5,
+          });
+          console.log("after rawtxn: ",rawTransaction,txid)
+          let status = null;
+          let cnt = 20;
+          while ((status === null || status.confirmationStatus !== 'confirmed') && cnt>0) {
+          const response = await connection.getSignatureStatus(txid);
+          console.log("here ",response);
+          status = response.value;
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          cnt--;
+          }
+          if (status === null || status.confirmationStatus !== 'confirmed') {
+            throw new Error("Transaction not confirmed after maximum retries");
+          }
+          let result = { transactionHash: txid };
+          console.log("After result:", result);
+          return result.transactionHash;
+}
+
         """
     float_amount = str(amount)
     temporary_template = transaction_function_template
-    modified_code = temporary_template.replace("INPUT_TOKEN", input_token).replace("OUTPUT_TOKEN", output_token).replace("AMOUNT", float_amount).replace("SLIPPAGE",slippage).replace("INPUT_DECIMAL",input_decimal)
+    modified_code = temporary_template.replace("INPUT_TOKEN", input_token).replace("OUTPUT_TOKEN", output_token).replace("AMOUNT", str(float_amount)).replace("SLIPPAGE",str(slippage)).replace("INPUT_DECIMAL",str(float(input_decimal)))
     modified_code_json = {
             "modifiedCode": modified_code
     }
