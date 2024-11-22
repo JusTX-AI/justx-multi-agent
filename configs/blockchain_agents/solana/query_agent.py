@@ -51,7 +51,7 @@ def transfer_to_telegram_agent(token_address: str):
         return f"An error occurred while sending message to telegram: {str(e)}"
     
 
-def solana_balance(address: str) -> str:
+def solana_balance_checker(address: str) -> str:
     """Get balance of a Solana address."""
 
     from configs.variables import SOLANA_RPC_URL
