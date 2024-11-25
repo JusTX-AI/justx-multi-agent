@@ -83,7 +83,8 @@ solana_coordinator_agent = Agent(
         transfer_to_dexscreener_agent,
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        transfer_to_solana_validator_agent
         
     ]
 )
@@ -195,7 +196,7 @@ solana_validator_agent = Agent(
     name="Solana Validator Agent",
     instructions=SOLANA_VALIDATOR_INSTRUCTIONS,
     functions=[
-        solana_fetch_validators,
+        solana_search_validators,
         transfer_to_solana_coordinator_agent,
         transfer_to_solana_create_and_delegate_stake_agent,
         transfer_to_solana_create_stake_account_agent,
