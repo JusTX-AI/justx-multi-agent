@@ -51,6 +51,14 @@ def transfer_to_telegram_agent(token_address: str):
     except requests.RequestException as e:
         return f"An error occurred while sending message to telegram: {str(e)}"
     
+def solana_get_sol_price():
+    """Get SOL price in USD."""
+    try:
+        response = requests.get("https://frontend-api.pump.fun/sol-price")
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        return f"An error occurred while fetching SOL price: {str(e)}"
 
 def solana_balance_checker(address: str) -> str:
     """Get balance of a Solana address."""
@@ -74,9 +82,7 @@ def solana_balance_checker(address: str) -> str:
         
         # Get SOL price in USD
         try:
-            sol_price_response = requests.get("https://frontend-api.pump.fun/sol-price")
-            sol_price_response.raise_for_status()
-            sol_price_data = sol_price_response.json()
+            sol_price_data = solana_get_sol_price()
             sol_price = float(sol_price_data["solPrice"])
             sol_usd_value = sol_balance * sol_price
             sol_balance_str = f"SOL Balance: {sol_balance} (${sol_usd_value:.2f})"

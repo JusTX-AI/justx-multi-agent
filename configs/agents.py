@@ -84,7 +84,8 @@ solana_coordinator_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_send_solana_agent = Agent(
@@ -104,7 +105,8 @@ solana_send_solana_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_send_token_agent = Agent(
@@ -124,7 +126,8 @@ solana_send_token_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_create_and_delegate_stake_agent = Agent(
@@ -144,7 +147,8 @@ solana_create_and_delegate_stake_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_create_stake_account_agent = Agent(
@@ -164,7 +168,8 @@ solana_create_stake_account_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_delegate_stake_agent = Agent(
@@ -184,7 +189,8 @@ solana_delegate_stake_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_deactivate_stake_agent = Agent(
@@ -204,7 +210,8 @@ solana_deactivate_stake_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_withdraw_stake_agent = Agent(
@@ -224,7 +231,8 @@ solana_withdraw_stake_agent = Agent(
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 solana_swap_agent = Agent(
@@ -244,7 +252,8 @@ solana_swap_agent = Agent(
         transfer_to_dexscreener_agent,
         transfer_to_telegram_agent,
         transfer_to_solana_validator_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 
@@ -265,7 +274,8 @@ solana_validator_agent = Agent(
         transfer_to_dexscreener_agent,
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
-        solana_balance_checker
+        solana_balance_checker,
+        solana_get_sol_price
     ]
 )
 
@@ -286,7 +296,8 @@ dexscreener_agent = Agent(
         transfer_to_dexscreener_agent,
         transfer_to_solana_swap_agent,
         transfer_to_telegram_agent,
-        transfer_to_solana_validator_agent
+        transfer_to_solana_validator_agent,
+        solana_get_sol_price
     ]
 )
 
@@ -306,6 +317,7 @@ telegram_agent = Agent(
        transfer_to_dexscreener_agent,
        transfer_to_solana_swap_agent,
        transfer_to_telegram_agent,
-       transfer_to_solana_validator_agent
+       transfer_to_solana_validator_agent,
+       solana_get_sol_price
    ]
 )
