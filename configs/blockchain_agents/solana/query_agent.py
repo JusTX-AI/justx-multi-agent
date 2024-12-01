@@ -103,7 +103,7 @@ def solana_balance_checker(address: str) -> str:
                     if balance > 0:  # Only include tokens with non-zero balance
                         # First try local token metadata endpoint
                         try:
-                            local_metadata_url = os.getenv("TOKEN_METADATA_URL", TOKEN_METADATA_URL)
+                            local_metadata_url = os.getenv("TOKEN_METADATA_URL", TOKEN_METADATA_URL).format(mint=mint)
                             local_response = requests.get(local_metadata_url)
                             local_response.raise_for_status()
                             token_info = local_response.json()
