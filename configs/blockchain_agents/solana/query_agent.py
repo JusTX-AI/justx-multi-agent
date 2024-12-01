@@ -72,6 +72,17 @@ def solana_balance_checker(address: str) -> str:
         
         sol_balance = float(sol_data["result"]["value"]) / 1e9 # Convert lamports to SOL
         
+        # Get SOL price in USD
+        try:
+            sol_price_response = requests.get("https://frontend-api.pump.fun/sol-price")
+            sol_price_response.raise_for_status()
+            sol_price_data = sol_price_response.json()
+            sol_price = float(sol_price_data["solPrice"])
+            sol_usd_value = sol_balance * sol_price
+            sol_balance_str = f"SOL Balance: {sol_balance} (${sol_usd_value:.2f})"
+        except requests.RequestException:
+            sol_balance_str = f"SOL Balance: {sol_balance}"
+        
         # Query token accounts for the address
         token_payload = {
             "jsonrpc": "2.0", 
@@ -92,7 +103,9 @@ def solana_balance_checker(address: str) -> str:
         token_response.raise_for_status()
         token_data = token_response.json()
 
-        balances = [f"SOL Balance: {sol_balance}"]
+        balances = [sol_balance_str]
+        token_addresses = []
+        token_balances = {}
 
         if "result" in token_data and "value" in token_data["result"]:
             for account in token_data["result"]["value"]:
@@ -101,6 +114,8 @@ def solana_balance_checker(address: str) -> str:
                     mint = parsed_data["mint"]
                     balance = parsed_data["tokenAmount"]["uiAmount"]
                     if balance > 0:  # Only include tokens with non-zero balance
+                        token_addresses.append(mint)
+                        token_balances[mint] = balance
                         # First try local token metadata endpoint
                         try:
                             local_metadata_url = os.getenv("TOKEN_METADATA_URL", TOKEN_METADATA_URL).format(mint=mint)
@@ -114,25 +129,35 @@ def solana_balance_checker(address: str) -> str:
                         except requests.RequestException:
                             # If local endpoint fails, use Unknown token
                             balances.append(f"Token: Unknown Token\nMint Address: {mint}\nToken Balance: {balance}")
-                            # # Commented out telegram bot check
-                            # try:
-                            #     tg_response = transfer_to_telegram_agent(mint)
-                            #     if isinstance(tg_response, dict):
-                            #         token_name = tg_response.get("name", "Unknown Token")
-                            #         token_symbol = tg_response.get("symbol", "")
-                            #         balances.append(f"Token: {token_name} ({token_symbol})\nMint Address: {mint}\nBalance: {balance}")
-                            #     else:
-                            #         balances.append(f"Token Mint: {mint}, Balance: {balance}")
-                            # except:
-                            #     balances.append(f"Token Mint: {mint}, Balance: {balance}")
+
+            # Get USD values
+            if token_addresses:
+                try:
+                    usd_values = get_token_prices(",".join(token_addresses), token_balances)
+                    balances.append("\nUSD Values:")
+                    balances.append(f"SOL: ${sol_usd_value:.2f}")
+                    balances.append(usd_values)
+                    # Calculate total USD value
+                    total_usd = sol_usd_value
+                    for line in usd_values.split('\n'):
+                        if '$' in line:
+                            try:
+                                # Extract USD amount from string like "Token XYZ: $123.45"
+                                usd_str = line.split('$')[1].strip()
+                                total_usd += float(usd_str)
+                            except (IndexError, ValueError):
+                                continue
+                    
+                    balances.append(f"\nTotal Portfolio Value: ${total_usd:.2f}")
+                except Exception as e:
+                    balances.append(f"\nError getting USD values: {str(e)}")
             
             return "\n".join(balances)
         else:
-            return f"SOL Balance: {sol_balance}\nNo token accounts found"
+            return sol_balance_str + "\nNo token accounts found"
 
     except requests.RequestException as e:
         return f"Error querying balances: {str(e)}"
-    
 
 def solana_search_validators(validator_search=None, limit=10, order_by="stake"):
     try:
@@ -215,6 +240,87 @@ def solana_search_validators(validator_search=None, limit=10, order_by="stake"):
     except requests.RequestException as e:
         return f"Error fetching validators: {str(e)}"
     
+
+def get_token_prices(token_addresses: str, token_balances: dict = None) -> str:
+    """
+    Get prices for multiple token mint addresses and optionally calculate USD values if balances provided.
+    Results are sorted by USD value in descending order, with price-unknown tokens at bottom.
+    
+    Args:
+        token_addresses: Comma separated string of token mint addresses
+        token_balances: Optional dict mapping token address to balance amount
+    """
+    try:
+        # Try Jupiter API first
+        jupiter_url = f"https://api.jup.ag/price/v2?ids={token_addresses}"
+        response = requests.get(jupiter_url)
+        response.raise_for_status()
+        data = response.json()
+        
+        prices = {}
+        if 'data' in data:
+            for token, details in data['data'].items():
+                if details and details.get('price'):
+                    prices[token] = float(details['price'])
+        
+        # For any missing prices, try Raydium API
+        missing_tokens = [addr for addr in token_addresses.split(',') if addr not in prices]
+        if missing_tokens:
+            raydium_url = f"https://api-v3.raydium.io/mint/price?mints={','.join(missing_tokens)}"
+            response = requests.get(raydium_url)
+            response.raise_for_status()
+            raydium_data = response.json()
+            
+            if raydium_data.get('success') and raydium_data.get('data'):
+                for token, price in raydium_data['data'].items():
+                    if price is not None:
+                        prices[token] = float(price)
+
+        # Prepare token data for sorting
+        token_data = []
+        unknown_price_tokens = []
+        total_usd = 0
+        
+        for token in token_addresses.split(','):
+            price = prices.get(token)
+            if price is None:
+                unknown_price_tokens.append(f"{token}: Price not found")
+                continue
+                
+            if token_balances and token in token_balances:
+                balance = float(token_balances[token])
+                usd_value = balance * price
+                total_usd += usd_value
+                token_data.append({
+                    'token': token,
+                    'price': price,
+                    'balance': balance,
+                    'usd_value': usd_value,
+                    'text': f"{token}:\nPrice: ${price:.6f}\nBalance: {balance:.6f}\nUSD Value: ${usd_value:.2f}"
+                })
+            else:
+                token_data.append({
+                    'token': token,
+                    'price': price,
+                    'balance': 0,
+                    'usd_value': 0,
+                    'text': f"{token}:\nPrice: ${price:.6f}"
+                })
+        
+        # Sort token data by USD value in descending order
+        token_data.sort(key=lambda x: x['usd_value'], reverse=True)
+        
+        # Combine sorted results with unknown price tokens at bottom
+        result = [item['text'] for item in token_data] + unknown_price_tokens
+        
+        response_text = "\n\n".join(result)
+        # if token_balances:
+        #     response_text += f"\n\nTotal USD Value: ${total_usd:.2f}"
+            
+        return response_text
+
+    except requests.RequestException as e:
+        return f"Error fetching token prices: {str(e)}"
 
 
 
