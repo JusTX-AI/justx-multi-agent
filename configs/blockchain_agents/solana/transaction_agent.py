@@ -11,7 +11,7 @@ def solana_send_solana(to_address: str, amount: float) -> str:
 
         transaction_function_template = """
             async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig) => {
- 
+
             const transferInstruction = SystemProgram.transfer({fromPubkey: fromKeypair.publicKey,
             toPubkey: "RECIPIENT_ADDRESS",
             lamports: AMOUNT * LAMPORTS_PER_SOL,
@@ -19,18 +19,25 @@ def solana_send_solana(to_address: str, amount: float) -> str:
 
             const transaction = new Transaction().add(transferInstruction);
 
-            const { blockhash } = await connection.getLatestBlockhash("confirmed");
+            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
             transaction.recentBlockhash = blockhash;
             transaction.feePayer = fromKeypair.publicKey;
             transaction.sign(fromKeypair);
 
             const signature = await connection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
+                skipPreflight: false,
+                preflightCommitment: "confirmed",
             });
+
+            await connection.confirmTransaction({
+              signature: signature,
+              blockhash: blockhash,
+              lastValidBlockHeight: lastValidBlockHeight,
+              }, "confirmed");
+
             let result = { transactionHash: signature  }
             return result.transactionHash;
-            }
+        }
             """
 
      
@@ -61,55 +68,90 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
         
         async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig,web3_spl) =>{
 
-            const receiverPubKey = new PublicKey('RECIPIENT_ADDRESS');  // replace with the receiver's address
-            const mintPubKey = new PublicKey('TOKEN_ADDRESS');  // replace with token mint address
-
-            const senderTokenAccount = await web3_spl.getOrCreateAssociatedTokenAccount(connection,fromKeypair,mintPubKey,fromKeypair.publicKey);
-            const receiverTokenAccount = await web3_spl.getOrCreateAssociatedTokenAccount(connection,fromKeypair,mintPubKey,receiverPubKey);
-
-            const senderTokenAccountInfo = await web3_spl.getAccount(connection, senderTokenAccount.address);
-            const senderTokenBalance = senderTokenAccountInfo.amount;
-
-            const mintInfo = await web3_spl.getMint(connection, mintPubKey);
-            const mintDecimals = mintInfo.decimals;
-
-            const transferAmount = BigInt( AMOUNT * 10**mintDecimals); // Amount to transfer in token's smallest unit
-
-            if (senderTokenBalance < transferAmount) {
-                console.log("Insufficient token balance for the transfer.");
-                return;
-            }
-
-            const transferInstruction = web3_spl.createTransferCheckedInstruction(
-                senderTokenAccount.address,
-                mintPubKey,
-                receiverTokenAccount.address,
-                fromKeypair.publicKey,
-                transferAmount, 
-                mintDecimals 
-            );
-
-            const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
-
-            const transaction = new Transaction({
-                recentBlockhash: blockhash,
-                feePayer: fromKeypair.publicKey,
-            }).add(transferInstruction);
-            
-            transaction.sign(fromKeypair);
-            const serializedTransaction = transaction.serialize();
-
-            const transactionSignature = await connection.sendRawTransaction(
-                serializedTransaction,
-                { maxRetries: 5 }
-            );
-
-            let result = { transactionHash: transactionSignature };
-
-            console.log("After result:",transactionSignature);
-
-            return result.transactionHash;
-        }
+        try {
+          
+          const receiverPubKey = new PublicKey('RECIPIENT_ADDRESS');
+          const mintPubKey = new PublicKey('TOKEN_ADDRESS');
+          
+          const senderTokenAccount = await web3_spl.getOrCreateAssociatedTokenAccount(
+              connection,
+              fromKeypair,
+              mintPubKey,
+              fromKeypair.publicKey
+          );
+          
+          const receiverTokenAccount = await web3_spl.getOrCreateAssociatedTokenAccount(
+              connection,
+              fromKeypair,
+              mintPubKey,
+              receiverPubKey
+          );
+          
+          const senderTokenAccountInfo = await web3_spl.getAccount(connection, senderTokenAccount.address);
+          const senderTokenBalance = senderTokenAccountInfo.amount;
+          
+          const mintInfo = await web3_spl.getMint(connection, mintPubKey);
+          const mintDecimals = mintInfo.decimals;
+          
+          const transferAmount = BigInt(Math.floor( AMOUNT * 10 ** mintDecimals));
+          
+          if (senderTokenBalance < transferAmount) {
+              console.log("Insufficient token balance for the transfer.");
+              return null;
+          }
+          
+          const transferInstruction = web3_spl.createTransferCheckedInstruction(
+              senderTokenAccount.address,
+              mintPubKey,
+              receiverTokenAccount.address,
+              fromKeypair.publicKey,
+              transferAmount,
+              mintDecimals
+          );
+          
+          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+          
+          const transaction = new Transaction({
+              recentBlockhash: blockhash,
+              feePayer: fromKeypair.publicKey,
+          }).add(transferInstruction);
+          
+          transaction.sign(fromKeypair);
+          
+          const transactionSignature = await connection.sendRawTransaction(
+              transaction.serialize(),
+              { maxRetries: 5 }
+          );
+          
+          console.log("Awaiting transaction confirmation...");
+          await connection.confirmTransaction(
+              {
+                  signature: transactionSignature,
+                  blockhash: blockhash,
+                  lastValidBlockHeight: lastValidBlockHeight,
+              },
+              "confirmed"
+          );
+          
+          console.log("Transaction confirmed successfully:", transactionSignature);
+          return transactionSignature;
+          
+          // Alternative method using sendAndConfirmTransaction
+          // console.log("Sending and confirming transaction...");
+          // const txid = await sendAndConfirmTransaction(connection, transaction, [fromKeypair]);
+          // console.log("Transaction successful:", txid);
+          // return txid;
+          
+        } catch (error) {
+              console.error("Error during token transfer:", error);
+              console.error("Error details:", {
+                  message: error.message,
+                  stack: error.stack,
+                  code: error.code
+              });
+              return null;
+          }
+        }          
         """
 
     temporary_template = transaction_function_template
@@ -377,89 +419,67 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
     print(f"Input Decimal: {input_decimal} ({type(input_decimal)})")
     transaction_function_template = """
 
-    async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig) => {
-
-        // const tokenInfo = {
-        //   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v": { symbol: "USDC", decimals: 6 },
-        //   "So11111111111111111111111111111111111111112": { symbol: "SOL", decimals: 9 },
-        // };
-      
-      
-        const inpToken = "INPUT_TOKEN" ;
-        const outToken = "OUTPUT_TOKEN" ;
-        // const amount =  AMOUNT * Math.pow(10, tokenInfo[inpToken].decimals);
-        const amount =  AMOUNT * Math.pow(10, INPUT_DECIMAL);
-        const slippage = SLIPPAGE * 100
-      
-        
-      
-        console.log("Wallet",fromKeypair);
-      
+    async (Connection, connection, SystemProgram, Transaction, sendAndConfirmTransaction, LAMPORTS_PER_SOL, PublicKey, StakeProgram, Keypair, VersionedTransaction, Buffer, fromKeypair, chainConfig) => {
+    const inpToken = "INPUT_TOKEN";
+    const outToken = "OUTPUT_TOKEN";
+    const amount = AMOUNT * Math.pow(10, INPUT_DECIMAL);
+    const slippage = SLIPPAGE * 100 ;
+    console.log("Wallet", fromKeypair);
+    
         // Get the best route for a swap
-        const quoteResponse = await (
-          await fetch(
-            `https://quote-api.jup.ag/v6/quote?inputMint=${inpToken}&outputMint=${outToken}&amount=${amount}&slippageBps=${slippage}`
-          )
-        ).json();
-      
-        console.log("QuickResposne: ",quoteResponse);
-      
-        const { swapTransaction } = await (
-          await fetch("https://quote-api.jup.ag/v6/swap", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              quoteResponse,
-              userPublicKey: fromKeypair.publicKey.toString(),
-              wrapAndUnwrapSol: true,
-            }),
-          })
-        ).json();
-      
-        console.log("swaptxn: ",swapTransaction);
-      
-        const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-      
-        const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-        transaction.sign([fromKeypair]);
-        console.log("Txn: ",transaction);
-      
-        const latestBlockHash = await connection.getLatestBlockhash();
-        console.log("after blockhash: ",latestBlockHash)
-        const simulationResult = await connection.simulateTransaction(transaction);
-      console.log("Simulation result:", simulationResult);
-      
-      if (simulationResult.value.err) {
-        throw new Error("Transaction simulation failed: " + JSON.stringify(simulationResult.value.err));
-      }
-      
-        const rawTransaction = transaction.serialize();
-        const txid = await connection.sendRawTransaction(rawTransaction, {
-          skipPreflight: true,
-          maxRetries: 2,
-        });
-        console.log("after rawtxn: ",rawTransaction,txid)
-      
-        let status = null;
-        let cnt = 15;
-        while ((status === null || status.confirmationStatus !== 'confirmed') && cnt>0) {
-        const response = await connection.getSignatureStatus(txid);
-        console.log("here ",response);
-        status = response.value;
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        cnt--;
-        }
-      
-        if (status === null || status.confirmationStatus !== 'confirmed') {
-          throw new Error("Transaction not confirmed after maximum retries");
-        }
-      
-        let result = { transactionHash: txid };
-      
-        console.log("After result:", result);
-      
-        return result.transactionHash;
-      }
+    const quoteResponse = await (
+    await fetch(
+        `https://quote-api.jup.ag/v6/quote?inputMint=${inpToken}&outputMint=${outToken}&amount=${amount}&slippageBps=${slippage}`
+    )
+    ).json();
+
+    const { swapTransaction } = await (
+    await fetch("https://quote-api.jup.ag/v6/swap", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+    quoteResponse,
+    userPublicKey: fromKeypair.publicKey.toString(),
+    wrapAndUnwrapSol: true,
+    }),
+    })
+    ).json();
+
+
+    const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+
+    const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+
+    // Sign the transaction with the provided keypair
+    transaction.sign([fromKeypair]);
+
+
+    const latestBlockHash = await connection.getLatestBlockhash("finalized");
+    transaction.recentBlockhash = latestBlockHash.blockhash;
+    transaction.feePayer = fromKeypair.publicKey;
+
+    // Sign the transaction
+    transaction.sign([fromKeypair]);
+
+    // Serialize and send
+    const serializedTransaction = transaction.serialize();
+    const txid = await connection.sendRawTransaction(serializedTransaction, {
+    skipPreflight: false,
+    maxRetries: 5,
+    });
+
+    // Confirm the transaction
+    console.log("waiting for transaction confirmation ...")
+    await connection.confirmTransaction({
+    signature: txid,
+    blockhash: latestBlockHash.blockhash,
+    lastValidBlockHeight: latestBlockHash.lastValidBlockHeight,
+    }, "confirmed");
+
+    console.log("Transaction confirmed with txid:", txid);
+    return txid;
+
+    }
         """
     float_amount = str(amount)
     temporary_template = transaction_function_template
