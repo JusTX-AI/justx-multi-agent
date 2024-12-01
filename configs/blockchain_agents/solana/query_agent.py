@@ -41,7 +41,7 @@ def transfer_to_dexscreener_agent(coin_name: str) -> str:
 def transfer_to_telegram_agent(token_address: str):
     """Query token address to telegram bot."""
     try:
-        url = f"{DEV_TG_BOT_URL}/send_message"
+        url = f"{os.environ.get('DEV_TG_BOT_URL')}/send_message"
         payload = {
             "text": f"/c {token_address}"
         }
