@@ -5,8 +5,12 @@ from pydantic import BaseModel
 from swarm import Swarm, Agent
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from sse_starlette.sse import EventSourceResponse
+from motor.motor_asyncio import AsyncIOMotorClient
+from redis import Redis
+import pickle
+import os
 
 # Configure logging
 logging.basicConfig(
@@ -21,6 +25,19 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+# Configure Redis and MongoDB
+redis_client = Redis(
+    host=os.getenv('REDIS_HOST', 'localhost'),
+    port=int(os.getenv('REDIS_PORT', 6379)),
+    db=int(os.getenv('REDIS_DB', 0)),
+    password=os.getenv('REDIS_PASSWORD')
+)
+mongo_client = AsyncIOMotorClient(os.getenv('MONGODB_URI'))
+db = mongo_client.justx_db
+sessions_collection = db.sessions
+
+REDIS_EXPIRY = 3600  # 1 hour cache expiry
+
 # Define request models
 class UserInput(BaseModel):
     chat_id: str
@@ -28,13 +45,25 @@ class UserInput(BaseModel):
     stream: Optional[bool] = False
     debug: Optional[bool] = False
 
-# Store session state
-sessions = {}
-
 class SessionState:
     def __init__(self, agent: Agent):
         self.messages: List[Dict] = []
         self.agent = agent
+        self.last_updated = datetime.utcnow()
+
+    def to_dict(self):
+        return {
+            'messages': self.messages,
+            'agent_name': self.agent.name,
+            'last_updated': self.last_updated
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict, agent: Agent):
+        session = cls(agent)
+        session.messages = data['messages']
+        session.last_updated = data['last_updated']
+        return session
 
 # Initialize the Swarm client
 client = Swarm()
@@ -59,17 +88,60 @@ async def stream_generator(response):
     finally:
         yield "data: [DONE]\n\n"
 
+async def get_session(chat_id: str) -> Optional[SessionState]:
+    """Get session from Redis or MongoDB"""
+    # Try Redis first
+    session_data = redis_client.get(f"session:{chat_id}")
+    if session_data:
+        session_dict = pickle.loads(session_data)
+        return SessionState.from_dict(session_dict, solana_coordinator_agent)
+
+    # Try MongoDB if not in Redis
+    session_doc = await sessions_collection.find_one({"chat_id": chat_id})
+    if session_doc:
+        session = SessionState.from_dict(session_doc, solana_coordinator_agent)
+        # Cache in Redis
+        redis_client.setex(
+            f"session:{chat_id}",
+            REDIS_EXPIRY,
+            pickle.dumps(session.to_dict())
+        )
+        return session
+    return None
+
+async def save_session(chat_id: str, session: SessionState):
+    """Save session to both Redis and MongoDB"""
+    session_dict = session.to_dict()
+    
+    # Save to Redis
+    redis_client.setex(
+        f"session:{chat_id}",
+        REDIS_EXPIRY,
+        pickle.dumps(session_dict)
+    )
+    
+    # Save to MongoDB
+    await sessions_collection.update_one(
+        {"chat_id": chat_id},
+        {
+            "$set": {
+                **session_dict,
+                "chat_id": chat_id,
+                "last_updated": datetime.utcnow()
+            }
+        },
+        upsert=True
+    )
+
 @app.post("/run")
 async def run_agent(user_input: UserInput):
     request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     logger.info(f"Request {request_id} received with input: {user_input}")
 
     # Get or create session state
-    session = sessions.get(user_input.chat_id)
+    session = await get_session(user_input.chat_id)
     if not session:
-        # Start with the solana coordinator agent if no session exists
         session = SessionState(solana_coordinator_agent)
-        sessions[user_input.chat_id] = session
 
     # Update session state
     session.messages.append({"role": "user", "content": user_input.user_input})
@@ -96,13 +168,15 @@ async def run_agent(user_input: UserInput):
             # Update session with response
             session.messages.extend(response.messages)
             session.agent = response.agent
+            
+            # Save updated session
+            await save_session(user_input.chat_id, session)
 
             result = {
                 "content": response.messages,
                 "chat_id": user_input.chat_id,
                 "agent": session.agent.name
             }
-            print(result)
             return result
     except Exception as e:
         logger.error(f"Request {request_id} - Error processing request: {str(e)}", exc_info=True)
@@ -110,17 +184,19 @@ async def run_agent(user_input: UserInput):
 
 @app.delete("/session/{chat_id}")
 async def delete_session(chat_id: str):
-    """Delete a session and its associated state"""
-    if chat_id in sessions:
-        del sessions[chat_id]
+    """Delete a session from both Redis and MongoDB"""
+    redis_client.delete(f"session:{chat_id}")
+    result = await sessions_collection.delete_one({"chat_id": chat_id})
+    
+    if result.deleted_count > 0:
         return {"status": "success", "message": f"Session {chat_id} deleted"}
     raise HTTPException(status_code=404, detail="Session not found")
 
 @app.get("/session/{chat_id}/history")
 async def get_session_history(chat_id: str):
     """Get the message history for a session"""
-    if chat_id in sessions:
-        session = sessions[chat_id]
+    session = await get_session(chat_id)
+    if session:
         return {
             "chat_id": chat_id,
             "messages": session.messages,
@@ -152,76 +228,3 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5002)
-
-
-# from configs.agents import coordinator_agent, solana_coordinator_agent
-# from swarm import Swarm, Agent
-# from fastapi import FastAPI, HTTPException
-# from pydantic import BaseModel
-# import logging
-# import json
-# from datetime import datetime
-
-# # Configure logging
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#     handlers=[
-#         logging.FileHandler('app.log'),
-#         logging.StreamHandler()
-#     ]
-# )
-# logger = logging.getLogger(__name__)
-
-# client = Swarm()
-# app = FastAPI()
-
-# class InputData(BaseModel):
-#     user_input: str
-#     chat_id: str
-
-# @app.post('/run')
-# async def run_agent(input_data: InputData):
-#     try:
-#         chat_id = input_data.chat_id
-#         print(f"Chat ID: {chat_id}")
-
-#         request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-#         logger.info(f"Request {request_id} received with input: {input_data}")
-
-#         # Parse the user_input as JSON if it's a string containing messages
-#         try:
-#             messages = json.loads(input_data.user_input)
-#         except json.JSONDecodeError:
-#             messages = [{"role": "user", "content": input_data.user_input}]
-            
-#         logger.debug(f"Request {request_id} - Formatted messages: {json.dumps(messages)}")
-
-#         logger.info(f"Request {request_id} - Running Solana coordinator agent")
-#         result = client.run(agent=solana_coordinator_agent, messages=messages)
-        
-#         response = result.messages[-1]["content"]
-#         responding_agent = "Unknown"
-        
-#         # Try to determine which agent provided the response
-#         for message in result.messages:
-#             if message.get("tool_name"):
-#                 responding_agent = message["tool_name"]
-#                 break
-        
-#         logger.info(f"Request {request_id} - Successfully processed request. Response from agent: {responding_agent}")
-#         logger.debug(f"Request {request_id} - Full response: {json.dumps(result.messages)}")
-        
-#         return {
-#             "content": response,
-#             "agent": responding_agent
-#         }
-
-#     except Exception as e:
-#         logger.error(f"Request {request_id} - Error processing request: {str(e)}", exc_info=True)
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# if __name__ == '__main__':
-#     import uvicorn
-#     logger.info("Starting FastAPI server")
-#     uvicorn.run(app, host='0.0.0.0', port=5002)

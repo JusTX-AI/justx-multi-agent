@@ -389,7 +389,7 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
         const outToken = "OUTPUT_TOKEN" ;
         // const amount =  AMOUNT * Math.pow(10, tokenInfo[inpToken].decimals);
         const amount =  AMOUNT * Math.pow(10, INPUT_DECIMAL);
-        const slippage = "SLIPPAGE"
+        const slippage = SLIPPAGE * 100
       
         
       

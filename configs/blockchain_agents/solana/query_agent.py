@@ -1,10 +1,11 @@
 import requests
 import json
-from configs.variables import DEV_TG_BOT_URL, SOLANA_RPC_URL
+from configs.variables import DEV_TG_BOT_URL, VALIDATORS_API_URL, TOKEN_METADATA_URL
 #from solana.rpc.api import Client
 import json
 import base64
 from datetime import datetime
+import os
 
 def transfer_to_dexscreener_agent(coin_name: str) -> str:
     """Search for a meme coin's contract address on dexscreener API."""
@@ -102,26 +103,28 @@ def solana_balance_checker(address: str) -> str:
                     if balance > 0:  # Only include tokens with non-zero balance
                         # First try local token metadata endpoint
                         try:
-                            local_metadata_url = f"https://dev-token-search.justx.ai/proxy/tokens/address/{mint}"
+                            local_metadata_url = os.getenv("TOKEN_METADATA_URL", TOKEN_METADATA_URL)
                             local_response = requests.get(local_metadata_url)
                             local_response.raise_for_status()
                             token_info = local_response.json()
                             token_name = token_info.get("name", "Unknown Token")
                             token_symbol = token_info.get("symbol", "")
-                            balances.append(f"Token: {token_name} ({token_symbol})\nMint Address: {mint}\nBalance: {balance}")
+                            balances.append(f"Token: {token_name} ({token_symbol})\nMint Address: {mint}\nToken Balance: {balance}")
                             continue
                         except requests.RequestException:
-                            # If local endpoint fails, try telegram bot
-                            try:
-                                tg_response = transfer_to_telegram_agent(mint)
-                                if isinstance(tg_response, dict):
-                                    token_name = tg_response.get("name", "Unknown Token")
-                                    token_symbol = tg_response.get("symbol", "")
-                                    balances.append(f"Token: {token_name} ({token_symbol})\nMint Address: {mint}\nBalance: {balance}")
-                                else:
-                                    balances.append(f"Token Mint: {mint}, Balance: {balance}")
-                            except:
-                                balances.append(f"Token Mint: {mint}, Balance: {balance}")
+                            # If local endpoint fails, use Unknown token
+                            balances.append(f"Token: Unknown Token\nMint Address: {mint}\nToken Balance: {balance}")
+                            # # Commented out telegram bot check
+                            # try:
+                            #     tg_response = transfer_to_telegram_agent(mint)
+                            #     if isinstance(tg_response, dict):
+                            #         token_name = tg_response.get("name", "Unknown Token")
+                            #         token_symbol = tg_response.get("symbol", "")
+                            #         balances.append(f"Token: {token_name} ({token_symbol})\nMint Address: {mint}\nBalance: {balance}")
+                            #     else:
+                            #         balances.append(f"Token Mint: {mint}, Balance: {balance}")
+                            # except:
+                            #     balances.append(f"Token Mint: {mint}, Balance: {balance}")
             
             return "\n".join(balances)
         else:
@@ -131,92 +134,87 @@ def solana_balance_checker(address: str) -> str:
         return f"Error querying balances: {str(e)}"
     
 
-def solana_search_validators(validator_search=None):
+def solana_search_validators(validator_search=None, limit=10, order_by="stake"):
     try:
-        # Get all validators
-        payload = {
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "getVoteAccounts",
-            "params": []
-        }
+        # Base URL for validators API
+        base_url = os.getenv("VALIDATORS_API_URL", VALIDATORS_API_URL)
 
-        response = requests.post(SOLANA_RPC_URL, json=payload)
+        # Validate order_by parameter
+        if order_by not in ["stake", "score"]:
+            order_by = "stake"  # Default to stake if invalid order parameter
+
+        if validator_search:
+            # Get all validators when searching
+            response = requests.get(f"{base_url}?order={order_by}")
+        else:
+            # Get validators with specified limit and ordering
+            response = requests.get(f"{base_url}?order={order_by}&limit={limit}")
+
         response.raise_for_status()
-        data = response.json()
+        validators = response.json()
 
-        if "result" not in data:
-            return "Error fetching validator data"
-
-        # Combine current and delinquent validators
-        current_validators = data["result"].get("current", [])
-        delinquent_validators = data["result"].get("delinquent", [])
-        all_validators = current_validators + delinquent_validators
-
-        # If searching for specific validator
         if validator_search:
             validator_search = validator_search.lower()
             best_match = None
             best_match_score = 0
 
-            for validator in all_validators:
-                # Check if validator is active (in current_validators)
-                is_active = validator in current_validators
-                status = "Active" if is_active else "Inactive"
-
+            for validator in validators:
                 # Calculate similarity score for address matching
-                vote_key_score = sum(1 for a, b in zip(validator_search, validator["votePubkey"].lower()) if a == b)
-                node_key_score = sum(1 for a, b in zip(validator_search, validator.get("nodePubkey", "").lower()) if a == b)
+                account_score = sum(1 for a, b in zip(validator_search, validator["account"].lower()) if a == b)
+                vote_account_score = sum(1 for a, b in zip(validator_search, validator["vote_account"].lower()) if a == b)
                 
                 # Use the better of the two scores
-                score = max(vote_key_score, node_key_score)
+                score = max(account_score, vote_account_score)
                 
                 # If exact match found
-                if validator_search in validator["votePubkey"].lower() or \
-                   validator_search in validator.get("nodePubkey", "").lower():
-                    return f"Validator Found:\nAddress: {validator['votePubkey']}\n" \
-                           f"Node Address: {validator.get('nodePubkey', 'N/A')}\n" \
-                           f"Status: {status}\n" \
-                           f"Active Stake: {validator.get('activatedStake', 0) / 1e9:.2f} SOL"
+                if validator_search in validator["account"].lower() or \
+                   validator_search in validator["vote_account"].lower():
+                    return f"Validator Found:\n" \
+                           f"Name: {validator['name']}\n" \
+                           f"Account: {validator['account']}\n" \
+                           f"Vote Account: {validator['vote_account']}\n" \
+                           f"Status: {'Active' if validator['is_active'] else 'Inactive'}\n" \
+                           f"Active Stake: {validator['active_stake'] / 1e9:.2f} SOL\n" \
+                           f"Commission: {validator['commission']}%\n" \
+                           f"Score: {validator['total_score']}"
                 
                 # Keep track of best partial match
                 if score > best_match_score:
                     best_match = validator
                     best_match_score = score
-                    best_match_status = status
 
             # If we found a good partial match (more than 50% characters match)
             if best_match and best_match_score >= len(validator_search) / 2:
-                return f"Closest Matching Validator Found:\nAddress: {best_match['votePubkey']}\n" \
-                       f"Node Address: {best_match.get('nodePubkey', 'N/A')}\n" \
-                       f"Status: {best_match_status}\n" \
-                       f"Active Stake: {best_match.get('activatedStake', 0) / 1e9:.2f} SOL"
+                return f"Closest Matching Validator Found:\n" \
+                       f"Name: {best_match['name']}\n" \
+                       f"Account: {best_match['account']}\n" \
+                       f"Vote Account: {best_match['vote_account']}\n" \
+                       f"Status: {'Active' if best_match['is_active'] else 'Inactive'}\n" \
+                       f"Active Stake: {best_match['active_stake'] / 1e9:.2f} SOL\n" \
+                       f"Commission: {best_match['commission']}%\n" \
+                       f"Score: {best_match['total_score']}"
                        
             return "Validator not found"
 
-        # Calculate total stake for percentage calculation
-        total_stake = sum(float(v.get("activatedStake", 0)) for v in all_validators)
-
-        # Sort validators by stake
-        sorted_validators = sorted(all_validators, 
-                                 key=lambda x: float(x.get("activatedStake", 0)), 
-                                 reverse=True)
-
-        # Get top 10 validators
+        # Format validators info based on limit
         top_validators = []
-        for validator in sorted_validators[:10]:
-            stake = float(validator.get("activatedStake", 0))
-            stake_percentage = (stake / total_stake) * 100 if total_stake > 0 else 0
-            is_active = validator in current_validators
-            status = "Active" if is_active else "Inactive"
-            
-            validator_info = f"Address: {validator['votePubkey']}\n" \
-                           f"Status: {status}\n" \
-                           f"Active Stake: {stake / 1e9:.2f} SOL\n" \
-                           f"Stake Percentage: {stake_percentage:.2f}%\n"
+        # Convert limit to integer before slicing
+        limit = int(limit) if limit else None
+        for validator in validators[:limit]:  # Slice validators based on limit
+            validator_info = f"Name: {validator['name']}\n" \
+                           f"Account: {validator['account']}\n" \
+                           f"Status: {'Active' if validator['is_active'] else 'Inactive'}\n" \
+                           f"Active Stake: {validator['active_stake'] / 1e9:.2f} SOL\n" \
+                           f"Commission: {validator['commission']}%\n" \
+                           f"Score: {validator['total_score']}\n"
             top_validators.append(validator_info)
 
-        return "\n".join(top_validators)
+        order_type = "stake amount" if order_by == "stake" else "performance score"
+        return f"Top {limit} validators ordered by {order_type}:\n\n" + "\n".join(top_validators)
 
     except requests.RequestException as e:
         return f"Error fetching validators: {str(e)}"
+    
+
+
+
