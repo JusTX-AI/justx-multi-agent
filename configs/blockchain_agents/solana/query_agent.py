@@ -258,29 +258,8 @@ def get_token_prices(token_addresses: str, token_balances: dict = None) -> str:
     """
     try:
         # Try Jupiter API first
-        jupiter_url = f"https://api.jup.ag/price/v2?ids={token_addresses}"
-        response = requests.get(jupiter_url)
-        response.raise_for_status()
-        data = response.json()
-        
-        prices = {}
-        if 'data' in data:
-            for token, details in data['data'].items():
-                if details and details.get('price'):
-                    prices[token] = float(details['price'])
-        
-        # For any missing prices, try Raydium API
-        missing_tokens = [addr for addr in token_addresses.split(',') if addr not in prices]
-        if missing_tokens:
-            raydium_url = f"https://api-v3.raydium.io/mint/price?mints={','.join(missing_tokens)}"
-            response = requests.get(raydium_url)
-            response.raise_for_status()
-            raydium_data = response.json()
-            
-            if raydium_data.get('success') and raydium_data.get('data'):
-                for token, price in raydium_data['data'].items():
-                    if price is not None:
-                        prices[token] = float(price)
+        # Get prices from multiple APIs
+        prices = get_token_prices_from_apis(token_addresses)
 
         # Prepare token data for sorting
         token_data = []
@@ -329,4 +308,152 @@ def get_token_prices(token_addresses: str, token_balances: dict = None) -> str:
         return f"Error fetching token prices: {str(e)}"
 
 
+def get_token_prices_from_apis(token_addresses: str) -> dict:
 
+    """Get token prices from multiple price APIs."""
+    
+    try:
+        prices = {}
+        tokens = token_addresses.split(',')
+
+        # Try Jupiter API first
+        jupiter_url = f"https://api.jup.ag/price/v2?ids={token_addresses}"
+        response = requests.get(jupiter_url)
+        response.raise_for_status()
+        data = response.json()
+        
+        if 'data' in data:
+            for token in tokens:
+                if token in data['data']:
+                    details = data['data'][token]
+                    if details and details.get('price'):
+                        prices[token] = float(details['price'])
+
+        # Try Raydium API for tokens without prices
+        remaining_tokens = [t for t in tokens if t not in prices]
+        if remaining_tokens:
+            raydium_url = f"https://api-v3.raydium.io/mint/price?mints={','.join(remaining_tokens)}"
+            response = requests.get(raydium_url)
+            response.raise_for_status()
+            raydium_data = response.json()
+            
+            if raydium_data.get('success') and raydium_data.get('data'):
+                for token in remaining_tokens:
+                    if token in raydium_data['data'] and raydium_data['data'][token] is not None:
+                        prices[token] = float(raydium_data['data'][token])
+        # Try Fluxbeam API for remaining tokens
+        remaining_tokens = [t for t in tokens if t not in prices]
+        if remaining_tokens:
+            try:
+                fluxbeam_url = f"https://data.fluxbeam.xyz/prices?ids={','.join(remaining_tokens)}"
+                #fluxbeam_url = f"https://data.fluxbeam.xyz/tokens/{token}/price"
+                response = requests.get(fluxbeam_url)
+                response.raise_for_status()
+                data = response.json()
+                
+                if 'data' in data:
+                    for token, price in data['data'].items():
+                        if price > 0:
+                            prices[token] = float(price)
+            except requests.RequestException:
+                pass
+                
+        return prices
+    except requests.RequestException as e:
+        print(f"Error fetching token prices: {str(e)}")
+        return {}
+
+
+def rug_checker(token_address: str) -> str:
+    """Check if a token is potentially a rug pull using rugcheck.xyz API and provide detailed token information."""
+    try:
+        url = f"https://api.rugcheck.xyz/v1/tokens/{token_address}/report"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+
+        # Extract key information
+        token_name = data.get('tokenMeta', {}).get('name', 'Unknown')
+        token_symbol = data.get('tokenMeta', {}).get('symbol', 'Unknown')
+        total_supply = data.get('token', {}).get('supply', 0)
+        decimals = data.get('token', {}).get('decimals', 0)
+        total_liquidity = data.get('totalMarketLiquidity', 0)
+        score = data.get('score', 0)
+        
+        # Build response message
+        response_parts = []
+        
+        # Token Basic Info
+        response_parts.append(f"Token Information:")
+        response_parts.append(f"Name: {token_name}")
+        response_parts.append(f"Symbol: {token_symbol}")
+        response_parts.append(f"Total Supply: {total_supply / (10 ** decimals):,.2f}")
+        response_parts.append(f"Total Liquidity: ${total_liquidity:,.2f}")
+        
+        # Overall risk level based on score
+        if score > 50000:
+            risk_color = "red"
+            risk_level = "High Risk"
+        elif score > 20000:
+            risk_color = "orange"
+            risk_level = "Medium Risk"
+        else:
+            risk_color = "green"
+            risk_level = "Low Risk"
+            
+        response_parts.append(f"\n<font color='{risk_color}'>Risk Assessment:")
+        response_parts.append(f"Overall Risk Score: {score}")
+        response_parts.append(f"Risk Level: {risk_level}</font>")
+        
+        # Top Holders Analysis
+        top_holders = data.get('topHolders', [])
+        if top_holders:
+            response_parts.append("\nTop Token Holders:")
+            for idx, holder in enumerate(top_holders, 1):
+                pct = holder.get('pct', 0)
+                amount = holder.get('uiAmount', 0)
+                owner = holder.get('owner', 'Unknown')
+                holder_color = "red" if pct > 20 else "orange" if pct > 10 else "green"
+                response_parts.append(f"<font color='{holder_color}'>#{idx}: {owner}")
+                response_parts.append(f"Amount: {amount:,.2f} ({pct:.2f}%)</font>")
+        
+        # Market Information
+        markets = data.get('markets', [])
+        if markets:
+            response_parts.append("\nMarket Information:")
+            for market in markets:
+                lp = market.get('lp', {})
+                response_parts.append(f"Market Type: {market.get('marketType', 'Unknown')}")
+                response_parts.append(f"Base Price: ${lp.get('basePrice', 0):,.8f}")
+                response_parts.append(f"Quote Price: ${lp.get('quotePrice', 0):,.2f}")
+                response_parts.append(f"LP Providers: {data.get('totalLPProviders', 0)}")
+        
+        # Risk Factors
+        risks = data.get('risks', [])
+        if risks:
+            response_parts.append("\nDetailed Risk Factors:")
+            for risk in risks:
+                risk_name = risk.get('name', '')
+                risk_value = risk.get('value', '')
+                risk_desc = risk.get('description', '')
+                risk_level = risk.get('level', '')
+                risk_score = risk.get('score', 0)
+                
+                color = "red" if risk_level == 'danger' else "orange" if risk_level == 'warn' else "green"
+                
+                risk_line = f"<font color='{color}'>"
+                risk_line += f"• {risk_name}"
+                if risk_value:
+                    risk_line += f" ({risk_value})"
+                risk_line += f": {risk_desc}"
+                risk_line += f" [Score: {risk_score}]</font>"
+                response_parts.append(risk_line)
+        
+        # Additional Token Metadata
+        if data.get('fileMeta', {}).get('description'):
+            response_parts.append(f"\nToken Description: {data['fileMeta']['description']}")
+            
+        return "\n".join(response_parts)
+        
+    except requests.RequestException as e:
+        return f"Error checking token status: {str(e)}"
