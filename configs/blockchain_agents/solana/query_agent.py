@@ -372,11 +372,13 @@ def rug_checker(token_address: str) -> str:
         response.raise_for_status()
         data = response.json()
 
-        # Extract key information
-        token_name = data.get('tokenMeta', {}).get('name', 'Unknown')
-        token_symbol = data.get('tokenMeta', {}).get('symbol', 'Unknown')
-        total_supply = data.get('token', {}).get('supply', 0)
-        decimals = data.get('token', {}).get('decimals', 0)
+        # Extract key information safely with defaults
+        token_meta = data.get('tokenMeta') or {}
+        token_data = data.get('token') or {}
+        token_name = token_meta.get('name', 'Unknown')
+        token_symbol = token_meta.get('symbol', 'Unknown')
+        total_supply = token_data.get('supply', 0)
+        decimals = token_data.get('decimals', 0)
         total_liquidity = data.get('totalMarketLiquidity', 0)
         score = data.get('score', 0)
         
@@ -387,7 +389,10 @@ def rug_checker(token_address: str) -> str:
         response_parts.append(f"Token Information:")
         response_parts.append(f"Name: {token_name}")
         response_parts.append(f"Symbol: {token_symbol}")
-        response_parts.append(f"Total Supply: {total_supply / (10 ** decimals):,.2f}")
+        if total_supply and decimals:
+            response_parts.append(f"Total Supply: {total_supply / (10 ** decimals):,.2f}")
+        else:
+            response_parts.append("Total Supply: Unknown")
         response_parts.append(f"Total Liquidity: ${total_liquidity:,.2f}")
         
         # Overall risk level based on score
@@ -406,10 +411,12 @@ def rug_checker(token_address: str) -> str:
         response_parts.append(f"Risk Level: {risk_level}</font>")
         
         # Top Holders Analysis
-        top_holders = data.get('topHolders', [])
+        top_holders = data.get('topHolders') or []
         if top_holders:
             response_parts.append("\nTop Token Holders:")
             for idx, holder in enumerate(top_holders, 1):
+                if not holder:
+                    continue
                 pct = holder.get('pct', 0)
                 amount = holder.get('uiAmount', 0)
                 owner = holder.get('owner', 'Unknown')
@@ -418,21 +425,25 @@ def rug_checker(token_address: str) -> str:
                 response_parts.append(f"Amount: {amount:,.2f} ({pct:.2f}%)</font>")
         
         # Market Information
-        markets = data.get('markets', [])
+        markets = data.get('markets') or []
         if markets:
             response_parts.append("\nMarket Information:")
             for market in markets:
-                lp = market.get('lp', {})
+                if not market:
+                    continue
+                lp = market.get('lp') or {}
                 response_parts.append(f"Market Type: {market.get('marketType', 'Unknown')}")
                 response_parts.append(f"Base Price: ${lp.get('basePrice', 0):,.8f}")
                 response_parts.append(f"Quote Price: ${lp.get('quotePrice', 0):,.2f}")
                 response_parts.append(f"LP Providers: {data.get('totalLPProviders', 0)}")
         
         # Risk Factors
-        risks = data.get('risks', [])
+        risks = data.get('risks') or []
         if risks:
             response_parts.append("\nDetailed Risk Factors:")
             for risk in risks:
+                if not risk:
+                    continue
                 risk_name = risk.get('name', '')
                 risk_value = risk.get('value', '')
                 risk_desc = risk.get('description', '')
@@ -450,8 +461,9 @@ def rug_checker(token_address: str) -> str:
                 response_parts.append(risk_line)
         
         # Additional Token Metadata
-        if data.get('fileMeta', {}).get('description'):
-            response_parts.append(f"\nToken Description: {data['fileMeta']['description']}")
+        file_meta = data.get('fileMeta') or {}
+        if file_meta.get('description'):
+            response_parts.append(f"\nToken Description: {file_meta['description']}")
             
         return "\n".join(response_parts)
         
