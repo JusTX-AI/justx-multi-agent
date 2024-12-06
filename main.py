@@ -182,15 +182,15 @@ async def run_agent(user_input: UserInput):
         logger.error(f"Request {request_id} - Error processing request: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.delete("/session/{chat_id}")
-async def delete_session(chat_id: str):
-    """Delete a session from both Redis and MongoDB"""
-    redis_client.delete(f"session:{chat_id}")
-    result = await sessions_collection.delete_one({"chat_id": chat_id})
+# @app.delete("/session/{chat_id}")
+# async def delete_session(chat_id: str):
+#     """Delete a session from both Redis and MongoDB"""
+#     redis_client.delete(f"session:{chat_id}")
+#     result = await sessions_collection.delete_one({"chat_id": chat_id})
     
-    if result.deleted_count > 0:
-        return {"status": "success", "message": f"Session {chat_id} deleted"}
-    raise HTTPException(status_code=404, detail="Session not found")
+#     if result.deleted_count > 0:
+#         return {"status": "success", "message": f"Session {chat_id} deleted"}
+#     raise HTTPException(status_code=404, detail="Session not found")
 
 @app.get("/session/{chat_id}/history")
 async def get_session_history(chat_id: str):
