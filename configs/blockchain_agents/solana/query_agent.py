@@ -40,6 +40,7 @@ import os
 
 def transfer_to_dexscreener_agent(coin_name: str) -> str:
     """Search for a token's contract address from Jupiter API."""
+    print(f"Searching for {coin_name} on Jupiter API")
     try:
         # Get token list from Jupiter API
         response = requests.get("https://token.jup.ag/strict")
