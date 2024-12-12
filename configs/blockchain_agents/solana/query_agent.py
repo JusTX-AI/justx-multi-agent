@@ -134,7 +134,13 @@ def solana_balance_checker(address: str) -> str:
         # Get SOL price in USD
         try:
             sol_price_data = solana_get_sol_price()
-            sol_price = float(sol_price_data["solPrice"])
+            # Handle case where sol_price_data is invalid by retrying once
+            try:
+                sol_price = float(sol_price_data["solPrice"])
+            except (TypeError, KeyError):
+                # Retry getting SOL price data once
+                sol_price_data = solana_get_sol_price()
+                sol_price = float(sol_price_data["solPrice"]) if isinstance(sol_price_data, dict) else 0
             sol_usd_value = sol_balance * sol_price
             sol_balance_str = f"SOL Balance: {sol_balance} (${sol_usd_value:.2f})"
         except requests.RequestException:
