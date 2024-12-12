@@ -60,7 +60,28 @@ def transfer_to_dexscreener_agent(coin_name: str) -> str:
             token = matches[0]
             return f"Contract address for {token['name']}: {token['address']}\nToken name: {token['name']}"
         else:
-            return f"No results found for {coin_name}."
+            # If not found in Jupiter, try DexScreener API
+            url = f"https://api.dexscreener.com/latest/dex/search?q={coin_name}"
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                data = response.json()
+                
+                if 'pairs' in data and len(data['pairs']) > 0:
+                    for pair in data['pairs']:
+                        if pair['baseToken']['symbol'].lower() == coin_name.lower():
+                            contract_address = pair['baseToken']['address']
+                            base_token_name = pair['baseToken']['name']
+                            return f"Contract address for {coin_name}: {contract_address}\nBase token name: {base_token_name}"
+                    
+                    # If no exact match found, return the first result
+                    contract_address = data['pairs'][0]['baseToken']['address']
+                    base_token_name = data['pairs'][0]['baseToken']['name']
+                    return f"Contract address for {coin_name} (closest match): {contract_address}\nBase token name: {base_token_name}"
+                else:
+                    return f"No results found for {coin_name}."
+            except requests.RequestException:
+                return f"No results found for {coin_name}."
 
     except requests.RequestException as e:
         return f"An error occurred while fetching data for {coin_name}: {str(e)}"
@@ -106,6 +127,8 @@ def solana_balance_checker(address: str) -> str:
         sol_response.raise_for_status()
         sol_data = sol_response.json()
         
+        if "result" not in sol_data or "value" not in sol_data["result"]:
+            raise ValueError("Invalid response format from RPC endpoint. Please try again.")
         sol_balance = float(sol_data["result"]["value"]) / 1e9 # Convert lamports to SOL
         
         # Get SOL price in USD
@@ -171,13 +194,16 @@ def solana_balance_checker(address: str) -> str:
                     balances.append("\nUSD Values:")
                     balances.append(f"SOL: ${sol_usd_value:.2f}")
                     balances.append(usd_values)
+                    
                     # Calculate total USD value
                     total_usd = sol_usd_value
                     for line in usd_values.split('\n'):
-                        if '$' in line:
+                        if ':' in line and '$' in line:
                             try:
                                 # Extract USD amount from string like "Token XYZ: $123.45"
                                 usd_str = line.split('$')[1].strip()
+                                # Remove any trailing text after the number
+                                usd_str = ''.join(c for c in usd_str if c.isdigit() or c == '.')
                                 total_usd += float(usd_str)
                             except (IndexError, ValueError):
                                 continue
