@@ -72,7 +72,7 @@ def solana_send_solana(to_address: str, amount: float) -> str:
         }
         
         print(f"Generated modified code: {modified_code_json}")
-        return modified_code_json
+        return modified_template
 
 def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
     if to_address is None or amount is None or token_mint is None:
@@ -174,7 +174,7 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
         }
 
     print(f"Generated modified code: {modified_code_json}")
-    return modified_code_json
+    return modified_template
 
 def solana_create_and_delegate_stake(from_address: str, amount: float, validator_identifier: str) -> str:
         # logger.debug(f"Checking validator identifier: {validator_identifier}")
@@ -283,7 +283,7 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
         }
         
         print(f"Generated modified code: {modified_code_json}")
-        return modified_code_json
+        return modified_code
 
 def solana_create_stake_account(from_address: str, stake_account: str, amount: float) -> str:
     transaction_function_template = """
@@ -322,7 +322,7 @@ def solana_create_stake_account(from_address: str, stake_account: str, amount: f
             "modifiedCode": modified_code
         }
     print(f"Generated modified code: {modified_code_json}")
-    return modified_code_json
+    return modified_code
 
 def solana_delegate_stake(stake_account: str, vote_account: str) -> str:
     transaction_function_template = """
@@ -355,7 +355,7 @@ def solana_delegate_stake(stake_account: str, vote_account: str) -> str:
             "modifiedCode": modified_code
         }
     print(f"Generated modified code: {modified_code_json}")
-    return modified_code_json
+    return modified_code
 
 def solana_deactivate_stake(stake_account: str) -> str:
     transaction_function_template = """
@@ -387,7 +387,7 @@ def solana_deactivate_stake(stake_account: str) -> str:
             "modifiedCode": modified_code
         }
     print(f"Generated modified code: {modified_code_json}")
-    return modified_code_json
+    return modified_code
 
 def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) -> str:
     transaction_function_template = """
@@ -421,7 +421,7 @@ def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) ->
             "modifiedCode": modified_code
     }
     print(f"Generated modified code: {modified_code_json}")
-    return modified_code_json
+    return modified_code
 
 def solana_swap(input_token: str, output_token: str, amount: float, slippage: float, input_decimal: float) -> str:
     print(f"Input Token: {input_token} ({type(input_token)})")
@@ -511,4 +511,4 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
             "modifiedCode": modified_code
     }
     print(f"Generated modified code: {modified_code_json}")
-    return modified_code_json
+    return modified_code
