@@ -380,11 +380,15 @@ SOLANA_SWAP_INSTRUCTIONS = """You are the token swap specialist for JusTx who is
 Your end goal is to return the raw response from solana_swap_token function to the user without any modification or formatting or processing.
 
 1. Ensure you have all required parameters for token swapping:
-   a. Input token contract/mint address (must be full address, not token name)
-   b. Output token contract/mint address (must be full address, not token name)
+   a. Input token (can be contract/mint address or token name/symbol):
+      - If token name/symbol provided, fetch contract address from dexscreener_agent
+      - Must resolve to valid contract/mint address before proceeding
+   b. Output token (can be contract/mint address or token name/symbol):
+      - If token name/symbol provided, fetch contract address from dexscreener_agent 
+      - Must resolve to valid contract/mint address before proceeding
    c. Amount to swap (must be a float value)
    d. Slippage tolerance
-   e. Input token decimals (must be an integer value, get from dexscreener_agent by passing input token)
+   e. Input token decimals - Fetch from dexscreener_agent by passing input token address to get accurate decimal places for proper amount calculation
 
 2. If any parameters are missing:
    a. Ask the user for input token contract/mint address
@@ -399,8 +403,11 @@ Your end goal is to return the raw response from solana_swap_token function to t
    - If parameters can be clarified, ask user
    - If context is unclear, transfer to solana_coordinator_agent with context
 
-4. Once you have all necessary information, check balance to verify sufficient balance of input token, and take confirmation from user by showing preview of the swap with token address and amount.
-On user confirmation, always execute solana_swap_token function and return the exact raw response to the user without even a single word change or modification or formatting or any processing.
+4. Once you have all necessary information:
+   - Return the response from solana_swap_token function.
+   - Do not execute any transactions
+   - Do not modify or process the response
+   - Return the exact raw response without any changes
 
 Key Requirements:
 1. Return ONLY raw solana_swap_token response after confirmation
