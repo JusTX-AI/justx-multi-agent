@@ -445,14 +445,14 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
                   const amount = Math.floor(AMOUNT * Math.pow(10, INPUT_DECIMAL));
                   const slippage = SLIPPAGE * 100 ;
           
-                  // Get quote with fee options
+                  // Get quote
                   const quoteResponse = await (
                       await fetch(
-                          "https://quote-api.jup.ag/v6/quote?inputMint="+inpToken+"&outputMint="+outToken+"&amount="+amount+"&slippageBps="+slippage+"&platformFeeBps=10"
+                          "https://quote-api.jup.ag/v6/quote?inputMint="+inpToken+"&outputMint="+outToken+"&amount="+amount+"&slippageBps="+slippage
                       )
                   ).json();
           
-                  // Get swap transaction with fee options
+                  // Get swap transaction
                   const { swapTransaction } = await (
                       await fetch("https://quote-api.jup.ag/v6/swap", {
                           method: "POST",
@@ -461,15 +461,23 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
                               quoteResponse,
                               userPublicKey: fromKeypair.publicKey.toString(),
                               wrapAndUnwrapSol: true,
-                              // Add fee parameters
-                              computeUnitPriceMicroLamports: 3000, // Priority fee
-                              prioritizationFeeLamports: 100000, // Additional priority fee
-                              feeAccount: fromKeypair.publicKey.toString() // Account to pay fees from
                           }),
                       })
                   ).json();
           
                   const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+                  const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
+
+                const modifyComputeUnits = ComputeBudgetProgram.setComputeUnitLimit({
+                    units: 900,
+                  });
+ 
+                  const addPriorityFee = ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: 500000,
+                  });
+                  transaction.add(addPriorityFee);
+                  transaction.add(modifyComputeUnits);
+          
                   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
                   transaction.recentBlockhash = blockhash;
                   transaction.feePayer = fromKeypair.publicKey;
@@ -483,9 +491,6 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
                     {
                         skipPreflight: false,
                         maxRetries: 5,
-                        // Add fee parameters for transaction
-                        maxPriorityFeePerGas: 100000,
-                        maxFeePerGas: 200000
                     }
                 );
 
