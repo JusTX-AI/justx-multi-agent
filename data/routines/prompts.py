@@ -388,7 +388,7 @@ Your end goal is to return the raw response from solana_swap_token function to t
       - Must resolve to valid contract/mint address before proceeding
    c. Amount to swap (must be a float value)
    d. Slippage tolerance
-   e. Input token decimals - Fetch from dexscreener_agent by passing input token address to get accurate decimal places for proper amount calculation
+   e. Input token decimals - MUST fetch from dexscreener_agent by passing input token address, do not prompt user for decimals under any circumstances. The dexscreener_agent response containing decimals is required before proceeding with the swap.
 
 2. If any parameters are missing:
    a. Ask the user for input token contract/mint address
