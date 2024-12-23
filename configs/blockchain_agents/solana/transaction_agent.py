@@ -438,7 +438,7 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
     print(f"Input Decimal: {input_decimal} ({type(input_decimal)})")
     transaction_function_template = """
 
-    async (solana_web3, Connection, connection, SystemProgram, Transaction, sendAndConfirmTransaction, LAMPORTS_PER_SOL, PublicKey, StakeProgram, Keypair, VersionedTransaction, Buffer, fromKeypair, chainConfig) => {
+    async (Connection, connection, SystemProgram, Transaction, sendAndConfirmTransaction, LAMPORTS_PER_SOL, PublicKey, StakeProgram, Keypair, VersionedTransaction, Buffer, fromKeypair, chainConfig) => {
     try {
                   const inpToken = "INPUT_TOKEN";
                   const outToken = "OUTPUT_TOKEN";
@@ -467,16 +467,6 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
           
                   const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
                   const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-
-                const modifyComputeUnits = solana_web3.ComputeBudgetProgram.setComputeUnitLimit({
-                    units: 900,
-                  });
- 
-                  const addPriorityFee = solana_web3.ComputeBudgetProgram.setComputeUnitPrice({
-                    microLamports: 500000,
-                  });
-                  transaction.add(addPriorityFee);
-                  transaction.add(modifyComputeUnits);
           
                   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
                   transaction.recentBlockhash = blockhash;
