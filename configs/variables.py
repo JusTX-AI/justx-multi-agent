@@ -1,0 +1,6 @@
+import os
+
+DEV_TG_BOT_URL = os.getenv('DEV_TG_BOT_URL')
+SOLANA_RPC_URL = os.getenv('SOLANA_RPC_URL')
+VALIDATORS_API_URL = os.getenv('VALIDATORS_API_URL')
+TOKEN_METADATA_URL = os.getenv('TOKEN_METADATA_URL')

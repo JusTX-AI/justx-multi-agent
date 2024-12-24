@@ -1,0 +1,51 @@
+[
+    {
+        "conversation": [
+            {"role": "user", "content": "What's the contract address for the GOAT coin?"}
+        ],
+        "function": "transfer_to_dexscreener_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"}
+        ],
+        "function": "transfer_to_send_sol_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "Tell me about the weather today"}
+        ],
+        "function": "None"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "Withdraw 1 SOL from 8424842484248424842484248424842484248424"}
+        ],
+        "function": "transfer_to_withdraw_stake_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "stake 1 sol with 8424842484248424842484248424842484248424"}
+        ],
+        "function": "transfer_to_create_and_delegate_stake_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "deactivate 8424842484248424842484248424842484248424"}
+        ],
+        "function": "transfer_to_deactivate_stake_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "create a stake account with 8424842484248424842484248424842484248424"}
+        ],
+        "function": "transfer_to_create_stake_account_agent"
+    },
+    {
+        "conversation": [
+            {"role": "user", "content": "delegate 1 SOL to 8424842484248424842484248424842484248424"}
+        ],
+        "function": "transfer_to_delegate_stake_agent"
+    }
+    
+]

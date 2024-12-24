@@ -1,0 +1,833 @@
+[
+    {
+        "id": "ba7c3201-d329-4213-b1ea-b074ce8abf22",
+        "timestamp": "2024-10-26T22:39:15.340912",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the PEPE coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to my friend"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "Please provide the recipient's Solana address, and I'll assist you in sending 1 SOL.",
+                    "Please provide the blockchain you're using (e.g., Solana) and your friend's wallet address so I can help you with the transfer.",
+                    "Please provide the recipient's Solana address, so I can assist you in sending 1 SOL.",
+                    "Could you please provide the recipient's Solana wallet address so I can assist you with sending 1 SOL?",
+                    "Please provide the recipient's wallet address so that I can assist you with sending 1 SOL to your friend."
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm specialized in handling requests related to meme coins and token transfers. For weather information, I recommend checking a weather-specific service or app. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with meme coins and token transfers. Could you please provide more specific information or specify how I can assist you in those areas?",
+                    "I'm here to assist with meme coin details and token transfers. For weather-related information, please check a weather service or app. If you have any questions about meme coins or need to transfer tokens, feel free to ask!",
+                    "I'm here to assist with requests related to meme coins and token transfers. For weather-related inquiries, please use a weather-specific service or application. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm specialized in handling requests related to meme coins and token transfers. Unfortunately, I don't have the capability to provide weather information. Please let me know if you have any questions regarding meme coins or token transactions!"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the latest meme coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "Could you please specify the name of the meme coin you are asking about? If you don't have a specific one in mind, I can look up some popular recent meme coins for you.",
+                    "Could you please specify the name of the latest meme coin you're interested in, or if you're looking for general information about a specific meme coin? This will help me search for the relevant contract address and information.",
+                    "Could you please provide the name of the meme coin you're interested in? This will help me search for the specific contract address and details.",
+                    "Can you please provide the name of the latest meme coin you're interested in? That way, I can fetch the relevant details and contract address for you.",
+                    "Could you please provide the name of the meme coin you're interested in learning about?"
+                ],
+                "case_accuracy": "0.00%"
+            }
+        ],
+        "correct_evals": 10,
+        "total_evals": 20,
+        "overall_accuracy_percent": "50.00%"
+    },
+    {
+        "id": "29b901df-4975-4c44-aa7f-b83ba86856f2",
+        "timestamp": "2024-10-26T23:04:21.924451",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to my friend"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "To assist you with sending 1 SOL to your friend, I'll need the recipient's Solana address. Could you please provide that information?",
+                    "Please provide the recipient's Solana address, and I will help you with the transfer of 1 SOL.",
+                    "Could you please provide the recipient address to whom you want to send 1 SOL?",
+                    "Please provide the recipient's wallet address so I can proceed with the token transfer request.",
+                    "Please provide the recipient's wallet address on the Solana blockchain so that I can process the transfer for you."
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "It seems like you're asking about the weather. However, I'm specialized in handling meme coins and token transfers. For weather-related information, please refer to a weather service or app for the most accurate and up-to-date information. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with queries related to meme coins and token transfers. For weather-related information, please consult a weather-specific service or application. If you have any requests regarding meme coins or token transfers, feel free to ask!",
+                    "I'm here to help with meme coins and token transfers. For information about the weather, please check a weather service or app. If you have any questions related to meme coins or need to transfer tokens, feel free to ask!",
+                    "I'm here to assist with requests related to meme coins and token transfers. For information about the weather, please check your local weather service or use a weather website or app. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with meme coin details and token transfers. For weather-related inquiries, please consult a weather service or application. If you have questions about meme coins or need help with token transfers, feel free to ask!"
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 10,
+        "total_evals": 15,
+        "overall_accuracy_percent": "66.67%"
+    },
+    {
+        "id": "029af888-448f-4e7c-a285-07ed30332cd2",
+        "timestamp": "2024-10-26T23:05:43.107775",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I am specialized in handling requests related to meme coins and token transfers, so I'm unable to provide weather information. Please check a weather app or website for the latest updates on today's weather.",
+                    "I'm specialized in handling requests related to meme coins and token transfers. For weather-related information, please consult a weather service or application. If you have questions about meme coins or tokens, feel free to ask!",
+                    "I'm here to help with meme coin and token transfer-related inquiries. For specific weather information, please check a reliable weather website or app. If you have questions about meme coins or token transfers, feel free to ask!",
+                    "I'm here to help with meme coin details and token transfer requests. Please let me know if you have any questions related to those topics!",
+                    "I'm specialized in handling requests related to meme coins and token transfers. Unfortunately, I can't provide information about the weather. You might want to check a weather website or app for the latest updates. If you have any questions about meme coins or token transfers, feel free to ask!"
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 15,
+        "total_evals": 15,
+        "overall_accuracy_percent": "100.00%"
+    },
+    {
+        "id": "d1750f40-f422-4006-a811-01bd932b21d4",
+        "timestamp": "2024-10-26T23:09:07.835316",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm sorry, but I can't help with weather information. You might want to check a weather website or app for the most accurate and up-to-date information. If you have any questions related to meme coins or token transfers, feel free to ask!",
+                    "I'm here to assist with requests related to meme coins and token transfers. For information on the weather, I recommend checking a weather service or application. If you have any questions about meme coins or need help with token transfers, feel free to ask!",
+                    "I'm unable to provide weather updates. I am specialized in handling requests related to meme coins and token transfers. If you have any inquiries about those topics, feel free to ask!",
+                    "I'm here to help with meme coins and token transfers, so I can't provide weather information. You may want to use a weather app or website for that. If you have any questions about meme coins or need assistance with token transfers, feel free to ask!",
+                    "I'm here to assist with meme coin details and token transfers. For weather-related information, please consult a weather-focused service or application. If you have questions related to meme coins or blockchain transfers, feel free to ask!"
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 15,
+        "total_evals": 15,
+        "overall_accuracy_percent": "100.00%"
+    },
+    {
+        "id": "a90cf7ac-528c-46b7-a06a-326a8ef28a5a",
+        "timestamp": "2024-10-26T23:10:03.343412",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm sorry, but I'm unable to provide real-time weather information. You might want to check a weather website or app for the latest updates on the weather in your area.",
+                    "I'm here to help with meme coins and token transfers. Could you please specify the meme coin you're interested in or let me know if you want to send tokens?",
+                    "I'm here to assist with meme coin inquiries and token transfers. For weather-related information, please check your local weather service or a weather app for the most accurate and up-to-date information. If you need help with something else, feel free to ask!",
+                    "I'm here to assist you with meme coin inquiries and token transfers. For weather-related information, please consult a weather service or application. If you have any questions about meme coins or token transfers, feel free to ask!",
+                    "I'm unable to provide real-time weather information. You can check a weather application or website for the most current updates on the weather in your location."
+                ],
+                "case_accuracy": "100.00%"
+            }
+        ],
+        "correct_evals": 15,
+        "total_evals": 15,
+        "overall_accuracy_percent": "100.00%"
+    },
+    {
+        "id": "be471dec-3061-48e1-9630-ef2c16fbe232",
+        "timestamp": "2024-10-28T01:22:12.343260",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm here to assist with information and tasks related to meme coins and token transfers. Unfortunately, I can't provide weather updates. Please let me know if you have any questions regarding meme coins or token transactions!",
+                    "I'm specialized in handling requests related to meme coins and token transfers, so I can't provide weather updates. You might want to check a weather app or website for the latest information. If you have questions about meme coins or need to transfer tokens, feel free to let me know!",
+                    "I'm here to assist with requests related to meme coins and token transfers. Please let me know if you need information or assistance in those areas!",
+                    "I'm here to assist with meme coins and token transfers. For weather information, please consult a weather service or app. Let me know if you need any help regarding meme coins or token transfers!",
+                    "I'm specialized in handling requests related to meme coins and token transfers. For information on the weather, please consult a weather-focused service or app. If you have any questions about meme coins or token transfers, feel free to ask!"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Withdraw 1 SOL from 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_withdraw_stake_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "stake 1 sol with 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_create_and_delegate_stake_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "None",
+                    "None",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "It seems like you want to send 1 SOL to the address `8424842484248424842484248424842484248424`. Is that correct? If so, please confirm, and I'll proceed with the transfer using the Solana blockchain.",
+                    "It looks like you want to stake 1 SOL (Solana token) to a specific address. However, staking usually involves interacting with a validator rather than just sending SOL to an address. If you're sure about sending SOL to this address, please confirm. Otherwise, if staking involves other procedures, please clarify your request or provide further details.",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "deactivate 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_deactivate_stake_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "Your request is unclear. Could you please provide more context or details about what you would like to achieve? Are you looking to transfer tokens, search for a meme coin, or something else? Let me know so I can assist you better.",
+                    "It seems like you're trying to perform an action related to a token or blockchain, but the request isn't clear. Could you please specify what you mean by \"deactivate\"? Are you trying to stop a token transfer or perform another action with a token or a meme coin? Let me know so I can assist you better.",
+                    "Your request to \"deactivate\" isn't clear. Are you trying to:\n\n1. Deactivate a token or meme coin? If so, please provide the name of the coin.\n2. Send tokens to a specific address on a particular blockchain? If so, please provide the details of the blockchain, amount, and recipient address.\n\nPlease provide more details or clarify your intent so I can assist you better.",
+                    "It seems like you are trying to perform an action related to the string of numbers you provided, but your request is unclear. Could you please provide more context or clarify what you would like to do with the given numbers? For example, are you attempting to interact with a meme coin, send tokens, or perform a different action?",
+                    "It seems like you're trying to deactivate something using a specific code. However, I'm not sure what \"deactivate\" refers to in this context. Could you clarify whether this is related to a token transfer, a meme coin, or something else? This will help me assist you more effectively."
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "create a stake account with 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_create_stake_account_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "It seems like you're providing a very large number. Could you please clarify your request? Are you trying to send tokens to a specific blockchain or are you referring to a meme coin? Let me know so I can assist you appropriately.",
+                    "Could you please clarify what blockchain or service you're referring to for creating a stake account? Also, it seems like the number provided might relate to a balance or another identifier\u2014additional context would be helpful.",
+                    "It seems like you're trying to create a stake account with a specific amount. However, it\u2019s unclear which blockchain you are referring to, and \"8424842484248424842484248424842484248424\" seems to be an unusually large number or possibly a mistyped identifier. Could you please specify the blockchain you are using and clarify the details? This will help me to direct you to the appropriate process or agent.",
+                    "Could you please clarify which blockchain you are referring to for creating a stake account? Additionally, provide details about the amount and relevant recipient address if applicable.",
+                    "It seems like you're trying to perform a transaction, possibly related to creating a stake account, but the information provided is not clear enough. Could you please specify which blockchain you are referring to and provide more details on the operation you want to perform?"
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "delegate 1 SOL to 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_delegate_stake_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "0.00%"
+            }
+        ],
+        "correct_evals": 15,
+        "total_evals": 40,
+        "overall_accuracy_percent": "37.50%"
+    },
+    {
+        "id": "a117a741-6d16-4b52-aa21-8e5805cd516d",
+        "timestamp": "2024-10-28T01:23:23.033200",
+        "results": [
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What's the contract address for the GOAT coin?"
+                    }
+                ],
+                "expected_function": "transfer_to_dexscreener_agent",
+                "actual_function": [
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent",
+                    "transfer_to_dexscreener_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "I want to send 1 SOL to CzLSujWBLFsSjncfkh59rUFqvafWcY5tzedWJSuypump"
+                    }
+                ],
+                "expected_function": "transfer_to_send_sol_agent",
+                "actual_function": [
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent",
+                    "transfer_to_send_sol_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Tell me about the weather today"
+                    }
+                ],
+                "expected_function": "None",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "I'm here to assist with requests related to meme coins and token transfers. For weather information, please check a weather service or app. If you need help with meme coins or token transfers, let me know!",
+                    "It seems like your request is about weather information, which is outside my specialized domain of meme coins and token transfers. You may want to check a weather website or app for the latest updates. If you have any questions related to meme coins or token transfers, feel free to ask!",
+                    "I'm here to assist with requests related to meme coins and token transfers. For weather-related inquiries, please check a dedicated weather service or app. If you have any questions about meme coins or need help with token transfers, feel free to ask!",
+                    "I'm here to help with requests related to meme coins and token transfers. Could you please let me know if you have any questions or tasks related to those topics?",
+                    "I'm here to assist with your requests related to meme coins and token transfers. If you have any questions or tasks regarding those topics, feel free to let me know!"
+                ],
+                "case_accuracy": "100.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "Withdraw 1 SOL from 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_withdraw_stake_agent",
+                "actual_function": [
+                    "transfer_to_withdraw_stake_agent",
+                    "None",
+                    "None",
+                    "None",
+                    "transfer_to_withdraw_stake_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "You've requested to withdraw 1 SOL. Please confirm the blockchain you are using (e.g., Solana) so I can proceed accordingly.",
+                    "It looks like you want to withdraw 1 SOL. I need to know more details about the destination or the purpose of the withdrawal. Could you please provide more details such as the recipient's address or if it's related to a stake or transfer request?",
+                    "Could you please confirm which blockchain you are referring to for this withdrawal, such as Solana?",
+                    "None"
+                ],
+                "case_accuracy": "40.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "stake 1 sol with 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_create_and_delegate_stake_agent",
+                "actual_function": [
+                    "transfer_to_create_and_delegate_stake_agent",
+                    "transfer_to_create_and_delegate_stake_agent",
+                    "None",
+                    "transfer_to_create_and_delegate_stake_agent",
+                    "transfer_to_create_and_delegate_stake_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "It seems like you want to stake 1 SOL. There are a few different operations associated with staking, such as creating a stake account, delegating the stake, etc. Could you please clarify if you want to create a new stake account, delegate an existing one, or perform another staking operation?",
+                    "None",
+                    "None"
+                ],
+                "case_accuracy": "80.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "deactivate 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_deactivate_stake_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "It seems like you're trying to deactivate something related to a specific identifier. Could you please clarify if you want to deactivate a stake on a blockchain, such as Solana? If so, I can assist you with that. Please confirm and provide additional details if possible.",
+                    "Could you please specify which blockchain you're referring to for deactivating this stake, so I can direct your request appropriately?",
+                    "To deactivate a stake, I need to know which blockchain you're referring to, as different blockchains have different processes for staking. Can you please specify the blockchain you are working with?",
+                    "It appears you want to deactivate a stake account. However, I'll need more information to proceed:\n\n1. The blockchain you are using (e.g., Solana).\n2. Confirmation that \"8424842484248424842484248424842484248424\" is the intended stake account or specific identifier.\n\nCould you please provide these details?",
+                    "To proceed with the deactivation of the stake, I need to confirm that you're referring to a Solana stake account. Could you please confirm this, or specify if it's related to another blockchain or service?"
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "create a stake account with 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_create_stake_account_agent",
+                "actual_function": [
+                    "None",
+                    "None",
+                    "None",
+                    "None",
+                    "None"
+                ],
+                "actual_message": [
+                    "It seems like you are looking to create a stake account. However, the value you provided (\"8424842484248424842484248424842484248424\") appears to be either an amount or an account number, and it seems quite large for typical transactions. Could you please clarify if this is an amount, an address, or something else related to your request?",
+                    "To help with creating a stake account, I need to know which blockchain you are referring to. Could you please specify the blockchain (e.g., Solana) where you want to create the stake account?",
+                    "It seems like you want to create a stake account, but the amount you mentioned doesn't seem to be clear or realistic. Could you please clarify the exact amount and the blockchain network you'd like to create the stake account on?",
+                    "It looks like you want to create a stake account. However, the \"8424842484248424842484248424842484248424\" doesn't seem like a valid amount or address. Could you please clarify if this is the amount you want to stake or a specific identifier related to your request?",
+                    "Please clarify the blockchain you are referring to for creating the stake account. This information will help me direct the request to the appropriate agent."
+                ],
+                "case_accuracy": "0.00%"
+            },
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "delegate 1 SOL to 8424842484248424842484248424842484248424"
+                    }
+                ],
+                "expected_function": "transfer_to_delegate_stake_agent",
+                "actual_function": [
+                    "transfer_to_delegate_stake_agent",
+                    "transfer_to_delegate_stake_agent",
+                    "transfer_to_delegate_stake_agent",
+                    "None",
+                    "transfer_to_delegate_stake_agent"
+                ],
+                "actual_message": [
+                    "None",
+                    "None",
+                    "None",
+                    "To proceed with delegating 1 SOL, I need to confirm whether you are referring to the Solana blockchain. Could you please confirm this?",
+                    "None"
+                ],
+                "case_accuracy": "80.00%"
+            }
+        ],
+        "correct_evals": 25,
+        "total_evals": 40,
+        "overall_accuracy_percent": "62.50%"
+    }
+]
