@@ -444,6 +444,7 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
                     ).json();
             
                     // Get swap transaction
+                    console.log("Priority Fee Amount",chainConfig.feeAmount)
                     const { swapTransaction } = await (
                         await fetch("https://quote-api.jup.ag/v6/swap", {
                             method: "POST",
@@ -453,7 +454,7 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
                                 userPublicKey: fromKeypair.publicKey.toString(),
                                 wrapAndUnwrapSol: true,
 	                            dynamicComputeUnitLimit: true, 
-                                prioritizationFeeLamports: chainConfig.feeAmount
+                                prioritizationFeeLamports: parseInt(chainConfig.feeAmount) || 'auto'
                             }),
                         })
                     ).json();
