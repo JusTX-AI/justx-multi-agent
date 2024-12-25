@@ -10,53 +10,49 @@ def solana_send_solana(to_address: str, amount: float) -> str:
             raise ValueError(f"Invalid amount: {amount}")
 
         transaction_function_template = """
-            async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig) => {
-
-             const transferInstruction = SystemProgram.transfer({
-        fromPubkey: fromKeypair.publicKey,
-        toPubkey: new PublicKey("RECIPIENT_ADDRESS"),
-        lamports: AMOUNT * LAMPORTS_PER_SOL,
-    });
-
-    const transaction = new Transaction().add(transferInstruction);
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = fromKeypair.publicKey;
-    transaction.sign(fromKeypair);
-
-    try {
-        const signature = await connection.sendRawTransaction(
-            transaction.serialize(),
-            {
-                skipPreflight: false,
-                preflightCommitment: "confirmed",
+            async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
+                const transferInstruction = web3.SystemProgram.transfer({
+                    fromPubkey: fromKeypair.publicKey,
+                    toPubkey: new web3.PublicKey("RECIPIENT_ADDRESS"),
+                    lamports: AMOUNT * web3.LAMPORTS_PER_SOL,
+                });
+            
+                const transaction = new web3.Transaction().add(transferInstruction);
+                const { blockhash } = await connection.getLatestBlockhash("confirmed");
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = fromKeypair.publicKey;
+                transaction.sign(fromKeypair);
+            
+                try {
+                    const signature = await connection.sendRawTransaction(
+                        transaction.serialize(),
+                        {
+                            skipPreflight: false,
+                            preflightCommitment: "confirmed",
+                        }
+                    );
+            
+                    let confirmed = false;
+                    let retries = 30;
+                    
+                    while (!confirmed && retries > 0) {
+                        const status = await connection.getSignatureStatus(signature);
+                        if (status?.value?.confirmationStatus === "confirmed") {
+                            confirmed = true;
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        retries--;
+                    }
+                    if (!confirmed) {
+                        throw new Error("Transaction confirmation timeout");
+                    }
+                                return signature ;
+                } catch (error) {
+                    throw new Error("SendRawTransaction failed:", error);
+                }
             }
-        );
 
-        let confirmed = false;
-        let retries = 30;
-        
-        while (!confirmed && retries > 0) {
-            const status = await connection.getSignatureStatus(signature);
-            console.log("checking status",retries,status);
-            if (status?.value?.confirmationStatus === "confirmed") {
-                confirmed = true;
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            retries--;
-        }
-
-        if (!confirmed) {
-            throw new Error("Transaction confirmation timeout");
-        }
-
-        return signature ;
-    } catch (error) {
-        throw new Error(`SendRawTransaction failed: ${error.message}`);
-    }
-
-        }
             """
 
      
@@ -85,86 +81,65 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
         raise ValueError(f"Invalid amount: {amount}")
 
     transaction_function_template = """
-        
-        async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig,web3_spl) =>{
-
-        try {
-        const receiverPubKey = new PublicKey('RECIPIENT_ADDRESS');
-        const mintPubKey = new PublicKey('TOKEN_ADDRESS');
-
-        const [senderTokenAccount, receiverTokenAccount] = await Promise.all([
-            web3_spl.getOrCreateAssociatedTokenAccount(
-                connection,
-                fromKeypair,
-                mintPubKey,
-                fromKeypair.publicKey
-            ),
-            web3_spl.getOrCreateAssociatedTokenAccount(
-                connection,
-                fromKeypair,
-                mintPubKey,
-                receiverPubKey
-            )
-        ]);
-
-        const [senderTokenAccountInfo, mintInfo] = await Promise.all([
-            web3_spl.getAccount(connection, senderTokenAccount.address),
-            web3_spl.getMint(connection, mintPubKey)
-        ]);
-
-        const transferAmount = BigInt(Math.floor( AMOUNT * 10 ** mintInfo.decimals));
-        if (senderTokenAccountInfo.amount < transferAmount) {
-            throw new Error("Insufficient token balance");
-        }
-
-        const transferInstruction = web3_spl.createTransferCheckedInstruction(
-            senderTokenAccount.address,
-            mintPubKey,
-            receiverTokenAccount.address,
-            fromKeypair.publicKey,
-            transferAmount,
-            mintInfo.decimals
-        );
-
-        const { blockhash } = await connection.getLatestBlockhash("confirmed");
-        const transaction = new Transaction().add(transferInstruction);
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = fromKeypair.publicKey;
-        transaction.sign(fromKeypair);
-
-        const signature = await connection.sendTransaction(
-            transaction,
-            [fromKeypair],
-            {
-                skipPreflight: false,
-                preflightCommitment: "confirmed",
+        async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
+                try {
+                    const receiverPubKey = new web3.PublicKey("RECIPIENT_ADDRESS");
+                    const mintPubKey = new web3.PublicKey("TOKEN_ADDRESS");
+            
+                    const [senderTokenAccount, receiverTokenAccount] = await Promise.all([
+                        web3_spl.getOrCreateAssociatedTokenAccount(connection,fromKeypair,mintPubKey,fromKeypair.publicKey),
+                        web3_spl.getOrCreateAssociatedTokenAccount(connection,fromKeypair,mintPubKey,receiverPubKey)
+                    ]);
+            
+                    const [senderTokenAccountInfo, mintInfo] = await Promise.all([
+                        web3_spl.getAccount(connection, senderTokenAccount.address),
+                        web3_spl.getMint(connection, mintPubKey)
+                    ]);
+            
+                    const transferAmount = BigInt(Math.floor( AMOUNT * 10 ** mintInfo.decimals));
+                    if (senderTokenAccountInfo.amount < transferAmount) {
+                        throw new Error("Insufficient token balance");
+                    }
+            
+                    const transferInstruction = web3_spl.createTransferCheckedInstruction(senderTokenAccount.address,mintPubKey,receiverTokenAccount.address,fromKeypair.publicKey,transferAmount,mintInfo.decimals);
+            
+                    const { blockhash } = await connection.getLatestBlockhash("confirmed");
+                    const transaction = new web3.Transaction().add(transferInstruction);
+                    transaction.recentBlockhash = blockhash;
+                    transaction.feePayer = fromKeypair.publicKey;
+                    transaction.sign(fromKeypair);
+            
+                    const signature = await connection.sendTransaction(transaction,[fromKeypair],
+                        {
+                            skipPreflight: false,
+                            preflightCommitment: "confirmed",
+                        }
+                    );
+            
+                    // Polling confirmation
+                    let confirmed = false;
+                    let retries = 30;
+                    while (!confirmed && retries > 0) {
+                        const status = await connection.getSignatureStatus(signature);
+                        console.log(retries,status);
+                        if (status?.value?.confirmationStatus === "confirmed") {
+                            confirmed = true;
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        retries--;
+                    }
+            
+                    if (!confirmed) {
+                        throw new Error("Transaction confirmation timeout");
+                    }
+            
+                    return signature ;
+                } catch (error) {
+                    console.log("Token transfer failed:", error);
+                }
             }
-        );
 
-        // Polling confirmation
-        let confirmed = false;
-        let retries = 30;
-        while (!confirmed && retries > 0) {
-            const status = await connection.getSignatureStatus(signature);
-            console.log("checking status",retries,status);
-            if (status?.value?.confirmationStatus === "confirmed") {
-                confirmed = true;
-                break;
-            }
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            retries--;
-        }
-
-        if (!confirmed) {
-            throw new Error("Transaction confirmation timeout");
-        }
-
-        return signature ;
-    } catch (error) {
-        console.log(`Token transfer failed: ${error.message}`);
-    }
-
-        }          
         """
 
     temporary_template = transaction_function_template
@@ -182,17 +157,16 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
         # logger.debug(f"Checking validator identifier: {validator_identifier}")
         vote_account = validator_identifier
         transaction_function_template = """
-                async (Connection,connection,SystemProgram,Transaction,sendAndConfirmTransaction,LAMPORTS_PER_SOL,PublicKey,StakeProgram,Keypair,VersionedTransaction,Buffer,fromKeypair,chainConfig) => {
+            async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
                     
-                const stakeAccount = Keypair.generate();
-                const rentExemptionAmount = await connection.getMinimumBalanceForRentExemption(StakeProgram.space);
+                const stakeAccount = web3.Keypair.generate();
+                const rentExemptionAmount = await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space);
 
-                console.log("error here", rentExemptionAmount);
+                console.log("Rent Exemption amount: ", rentExemptionAmount);
 
-                const amountToStake = ( AMOUNT  * LAMPORTS_PER_SOL) + rentExemptionAmount;
-                console.log("here 2");
+                const amountToStake = ( AMOUNT  * web3.LAMPORTS_PER_SOL) + rentExemptionAmount;
 
-                const createAccountTransaction = StakeProgram.createAccount({
+                const createAccountTransaction = web3.StakeProgram.createAccount({
                     fromPubkey: fromKeypair.publicKey,
                     stakePubkey: stakeAccount.publicKey,
                     authorized: {
@@ -202,9 +176,7 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
                     lamports: amountToStake,
                 });
 
-                console.log("here 3");
-
-                const transaction = new Transaction();
+                const transaction = new web3.Transaction();
                 transaction.add(createAccountTransaction);
 
                 const { blockhash } = await connection.getLatestBlockhash();
@@ -233,16 +205,15 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
 
                 await new Promise(resolve => setTimeout(resolve, 5000));
 
-                const delegateTransaction = StakeProgram.delegate({
+                const delegateTransaction = web3.StakeProgram.delegate({
                     stakePubkey: stakeAccount.publicKey,
                     authorizedPubkey: fromKeypair.publicKey,
-                    votePubkey: new PublicKey( "VALIDATOR_VOTE_ACCOUNT" ),
+                    votePubkey: new web3.PublicKey( "VALIDATOR_VOTE_ACCOUNT" ),
                 });
-                console.log("here 5");
 
                 console.log("delegatetxn here:", delegateTransaction);
 
-                const delegateTx = new Transaction();
+                const delegateTx = new web3.Transaction();
                 delegateTx.add(delegateTransaction);
 
                 const { blockhash: delegateBlockhash } = await connection.getLatestBlockhash();
@@ -274,7 +245,7 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
 
                 return result.transactionHash;
 
-                }
+            }
 
         """
 
@@ -290,32 +261,38 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
 
 def solana_create_stake_account(from_address: str, stake_account: str, amount: float) -> str:
     transaction_function_template = """
-        async (connection, web3, fromKeypair, chainConfig, Buffer) => {
-          const stakeAccount = new web3.Keypair();
-          const minimumRent = await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space);
-          const amountToStake = AMOUNT * web3.LAMPORTS_PER_SOL;
+       async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
 
-          const createAccountTransaction = web3.StakeProgram.createAccount({
-            fromPubkey: fromKeypair.publicKey,
-            stakePubkey: stakeAccount.publicKey,
-            authorized: new web3.Authorized(fromKeypair.publicKey, fromKeypair.publicKey),
-            lockup: new web3.Lockup(0, 0, fromKeypair.publicKey),
-            lamports: minimumRent + amountToStake
-          });
+            try {
+                const stakeAccount = new web3.Keypair();
+                const minimumRent = await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space);
+                const amountToStake = AMOUNT * web3.LAMPORTS_PER_SOL;
 
-          const transaction = new web3.Transaction().add(createAccountTransaction);
-          const { blockhash } = await connection.getLatestBlockhash("confirmed");
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = fromKeypair.publicKey;
-          transaction.sign(fromKeypair, stakeAccount);
-          
-          const signature = await connection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
-          });
-          
-          let result = { transactionHash: signature, stakeAccountPublicKey: stakeAccount.publicKey.toBase58() }
-          return JSON.stringify(result);
+                const createAccountTransaction = web3.StakeProgram.createAccount({
+                    fromPubkey: fromKeypair.publicKey,
+                    stakePubkey: stakeAccount.publicKey,
+                    authorized: new web3.Authorized(fromKeypair.publicKey, fromKeypair.publicKey),
+                    lockup: new web3.Lockup(0, 0, fromKeypair.publicKey),
+                    lamports: minimumRent + amountToStake
+                });
+
+                const transaction = new web3.Transaction().add(createAccountTransaction);
+                const { blockhash } = await connection.getLatestBlockhash("confirmed");
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = fromKeypair.publicKey;
+                transaction.sign(fromKeypair, stakeAccount);
+
+                const signature = await connection.sendRawTransaction(transaction.serialize(), {
+                skipPreflight: false,
+                preflightCommitment: "confirmed",
+                });
+
+                return signature;
+            } catch (error) {
+                console.log("Error in withdrawl:", error);
+                throw error;
+            }
+
         }
         """
 
@@ -330,26 +307,33 @@ def solana_create_stake_account(from_address: str, stake_account: str, amount: f
 
 def solana_delegate_stake(stake_account: str, vote_account: str) -> str:
     transaction_function_template = """
-        async (connection, web3, fromKeypair, chainConfig, Buffer) => {
-          const delegateTransaction = web3.StakeProgram.delegate({
-            stakePubkey: new web3.PublicKey('STAKE_ACCOUNT'),
-            authorizedPubkey: fromKeypair.publicKey,
-            votePubkey: new web3.PublicKey('VOTE_ACCOUNT')
-          });
+        async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
+            try {
+                const delegateTransaction = web3.StakeProgram.delegate({
+                    stakePubkey: new web3.PublicKey("STAKE_ACCOUNT"),
+                    authorizedPubkey: fromKeypair.publicKey,
+                    votePubkey: new web3.PublicKey("VOTE_ACCOUNT"),
+                });
 
-          const transaction = new web3.Transaction().add(delegateTransaction);
-          const { blockhash } = await connection.getLatestBlockhash("confirmed");
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = fromKeypair.publicKey;
-          transaction.sign(fromKeypair);
-          
-          const signature = await connection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
-          });
-          
-          let result = { transactionHash: signature }
-          return result.transactionHash;
+                const transaction = new web3.Transaction().add(delegateTransaction);
+                const { blockhash } = await connection.getLatestBlockhash("confirmed");
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = fromKeypair.publicKey;
+                transaction.sign(fromKeypair);
+
+                const signature = await connection.sendRawTransaction(
+                transaction.serialize(),
+                {
+                    skipPreflight: false,
+                    preflightCommitment: "confirmed",
+                }
+                );
+
+                return signature;
+            } catch (error) {
+                console.log("Error in withdrawl:", error);
+                throw error;
+            }
         }
         """
 
@@ -364,25 +348,29 @@ def solana_delegate_stake(stake_account: str, vote_account: str) -> str:
 
 def solana_deactivate_stake(stake_account: str) -> str:
     transaction_function_template = """
-        async (connection, web3, fromKeypair, chainConfig, Buffer) => {
-          const deactivateTransaction = web3.StakeProgram.deactivate({
-            stakePubkey: new web3.PublicKey('STAKE_ACCOUNT'),
-            authorizedPubkey: fromKeypair.publicKey,
-          });
+       async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
+            try {
+                const deactivateTransaction = web3.StakeProgram.deactivate({
+                    stakePubkey: new web3.PublicKey('STAKE_ACCOUNT'),
+                    authorizedPubkey: fromKeypair.publicKey,
+                });
 
-          const transaction = new web3.Transaction().add(deactivateTransaction);
-          const { blockhash } = await connection.getLatestBlockhash("confirmed");
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = fromKeypair.publicKey;
-          transaction.sign(fromKeypair);
-          
-          const signature = await connection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
-          });
-          
-          let result = { transactionHash: signature }
-          return result.transactionHash;
+                const transaction = new web3.Transaction().add(deactivateTransaction);
+                const { blockhash } = await connection.getLatestBlockhash("confirmed");
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = fromKeypair.publicKey;
+                transaction.sign(fromKeypair);
+                
+                const signature = await connection.sendRawTransaction(transaction.serialize(), {
+                skipPreflight: false,
+                preflightCommitment: "confirmed",
+                });
+
+                return signature;
+            } catch (error) {
+                console.log("Error in withdrawl:", error);
+                throw error;
+            }
         }
         """
 
@@ -397,32 +385,35 @@ def solana_deactivate_stake(stake_account: str) -> str:
 
 def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) -> str:
     transaction_function_template = """
-        async (connection, web3, fromKeypair, chainConfig, Buffer) => {
-          const withdrawTransaction = web3.StakeProgram.withdraw({
-            stakePubkey: new web3.PublicKey('STAKE_ACCOUNT'),
-            authorizedPubkey: fromKeypair.publicKey,
-            toPubkey: new web3.PublicKey('TO_ADDRESS'),
-            lamports: AMOUNT * web3.LAMPORTS_PER_SOL
-          });
+        async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
+            try {
+                const withdrawTransaction = web3.StakeProgram.withdraw({
+                    stakePubkey: new web3.PublicKey('STAKE_ACCOUNT'),
+                    authorizedPubkey: fromKeypair.publicKey,
+                    toPubkey: new web3.PublicKey('TO_ADDRESS'),
+                    lamports: STAKE_AMOUNT
+                });
 
-          const transaction = new web3.Transaction().add(withdrawTransaction);
-          const { blockhash } = await connection.getLatestBlockhash("confirmed");
-          transaction.recentBlockhash = blockhash;
-          transaction.feePayer = fromKeypair.publicKey;
-          transaction.sign(fromKeypair);
-          
-          const signature = await connection.sendRawTransaction(transaction.serialize(), {
-            skipPreflight: false,
-            preflightCommitment: "confirmed",
-          });
-          
-          let result = { transactionHash: signature }
-          return result.transactionHash;
+                const transaction = new web3.Transaction().add(withdrawTransaction);
+                const { blockhash } = await connection.getLatestBlockhash("confirmed");
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = fromKeypair.publicKey;
+                transaction.sign(fromKeypair);
+
+                const signature = await connection.sendRawTransaction(transaction.serialize(), {
+                skipPreflight: false,
+                preflightCommitment: "confirmed",
+                });
+                return signature;
+            } catch (error) {
+                console.log("Error in withdrawl:", error);
+                throw error;
+            }
         }
         """
 
     temporary_template = transaction_function_template
-    modified_code = temporary_template.replace("STAKE_ACCOUNT", stake_account).replace("TO_ADDRESS", to_address).replace("AMOUNT", str(float_amount))
+    modified_code = temporary_template.replace("STAKE_ACCOUNT", stake_account).replace("TO_ADDRESS", to_address).replace("STAKE_AMOUNT", str(float_amount))
     modified_code_json = {
             "modifiedCode": modified_code
     }
@@ -438,78 +429,81 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
     print(f"Input Decimal: {input_decimal} ({type(input_decimal)})")
     transaction_function_template = """
 
-    async (Connection, connection, SystemProgram, Transaction, sendAndConfirmTransaction, LAMPORTS_PER_SOL, PublicKey, StakeProgram, Keypair, VersionedTransaction, Buffer, fromKeypair, chainConfig) => {
-    try {
-                  const inpToken = "INPUT_TOKEN";
-                  const outToken = "OUTPUT_TOKEN";
-                  const amount = Math.floor(AMOUNT * Math.pow(10, INPUT_DECIMAL));
-                  const slippage = SLIPPAGE * 100 ;
-          
-                  // Get quote
-                  const quoteResponse = await (
-                      await fetch(
-                          "https://quote-api.jup.ag/v6/quote?inputMint="+inpToken+"&outputMint="+outToken+"&amount="+amount+"&slippageBps="+slippage
-                      )
-                  ).json();
-          
-                  // Get swap transaction
-                  const { swapTransaction } = await (
-                      await fetch("https://quote-api.jup.ag/v6/swap", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                              quoteResponse,
-                              userPublicKey: fromKeypair.publicKey.toString(),
-                              wrapAndUnwrapSol: true,
-                          }),
-                      })
-                  ).json();
-          
-                  const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-                  const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
-          
-                  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-                  transaction.recentBlockhash = blockhash;
-                  transaction.feePayer = fromKeypair.publicKey;
-                  
-                  // Sign the transaction
-                  transaction.sign([fromKeypair]);
-          
-                  const signature = await connection.sendRawTransaction(
-                    transaction.serialize(),
-                    // [fromKeypair],
-                    {
-                        skipPreflight: false,
-                        maxRetries: 5,
-                    }
-                );
-
-                  // Polling confirmation
-                  let confirmed = false;
-                  let retries = 30;
-                  while (!confirmed && retries > 0) {
-                      const status = await connection.getSignatureStatus(signature);
-                      console.log(retries,status);
-                      if (status?.value?.confirmationStatus === "confirmed") {
-                          confirmed = true;
-                          break;
+    async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
+                try {
+                    const inpToken = "INPUT_TOKEN";
+                    const outToken = "OUTPUT_TOKEN";
+                    const amount = AMOUNT * Math.pow(10, INPUT_DECIMAL);
+                    const slippage = SLIPPAGE  * 100 ;
+            
+                    // Get quote
+                    const quoteResponse = await (
+                        await fetch(
+                            "https://quote-api.jup.ag/v6/quote?inputMint="+inpToken+"&outputMint="+outToken+"&amount="+amount+"&slippageBps="+slippage
+                        )
+                    ).json();
+            
+                    // Get swap transaction
+                    const { swapTransaction } = await (
+                        await fetch("https://quote-api.jup.ag/v6/swap", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                quoteResponse,
+                                userPublicKey: fromKeypair.publicKey.toString(),
+                                wrapAndUnwrapSol: true,
+	                            dynamicComputeUnitLimit: true, 
+                                prioritizationFeeLamports: chainConfig.feeAmount
+                            }),
+                        })
+                    ).json();
+            
+                    const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+                    const transaction = web3.VersionedTransaction.deserialize(swapTransactionBuf);
+            
+                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+                    transaction.recentBlockhash = blockhash;
+                    transaction.feePayer = fromKeypair.publicKey;
+                    
+                    // Sign the transaction
+                    transaction.sign([fromKeypair]);
+            
+                    const signature = await connection.sendRawTransaction(
+                      transaction.serialize(),
+                      // [fromKeypair],
+                      {
+                          skipPreflight: false,
+                          maxRetries: 5,
                       }
-                      await new Promise(resolve => setTimeout(resolve, 1000));
-                      retries--;
-                  }
-          
-                  if (!confirmed) {
-                      throw new Error("Transaction confirmation timeout");
-                  }
-        
-          
-                  return signature;
-              } catch (error) {
-                  console.log("Jupiter swap failed:", error);
-              }
+                  );
+            
+                    // Polling confirmation
+                    let confirmed = false;
+                    let retries = 30;
+                    while (!confirmed && retries > 0) {
+                        const status = await connection.getSignatureStatus(signature);
+                        console.log(retries,status);
+                        if (status?.value?.confirmationStatus === "confirmed") {
+                            confirmed = true;
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        retries--;
+                    }
+            
+                    if (!confirmed) {
+                        throw new Error("Transaction confirmation timeout");
+                    }
+            
+            
+                    return signature;
+                } catch (error) {
+                    console.log("Jupiter swap failed:", error);
+                }
+            
+    }     
 
 
-    }
         """
     float_amount = str(amount)
     temporary_template = transaction_function_template
