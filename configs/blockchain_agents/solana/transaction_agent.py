@@ -10,7 +10,7 @@ def solana_send_solana(to_address: str, amount: float) -> str:
             raise ValueError(f"Invalid amount: {amount}")
 
         transaction_function_template = """
-            async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
+            async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
                 const transferInstruction = web3.SystemProgram.transfer({
                     fromPubkey: fromKeypair.publicKey,
                     toPubkey: new web3.PublicKey("RECIPIENT_ADDRESS"),
@@ -81,7 +81,7 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
         raise ValueError(f"Invalid amount: {amount}")
 
     transaction_function_template = """
-        async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
+        async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
                 try {
                     const receiverPubKey = new web3.PublicKey("RECIPIENT_ADDRESS");
                     const mintPubKey = new web3.PublicKey("TOKEN_ADDRESS");
@@ -157,7 +157,7 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
         # logger.debug(f"Checking validator identifier: {validator_identifier}")
         vote_account = validator_identifier
         transaction_function_template = """
-            async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
+           async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
                     
                 const stakeAccount = web3.Keypair.generate();
                 const rentExemptionAmount = await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space);
@@ -429,7 +429,7 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
     print(f"Input Decimal: {input_decimal} ({type(input_decimal)})")
     transaction_function_template = """
 
-    async (connection,web3,Buffer,fromKeypair,chainConfig, web3_spl) => {
+   async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
                 try {
                     const inpToken = "INPUT_TOKEN";
                     const outToken = "OUTPUT_TOKEN";
