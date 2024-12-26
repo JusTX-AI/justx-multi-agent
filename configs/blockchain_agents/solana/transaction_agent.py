@@ -49,7 +49,8 @@ def solana_send_solana(to_address: str, amount: float) -> str:
                     }
                                 return signature ;
                 } catch (error) {
-                    throw new Error("SendRawTransaction failed:", error);
+                    console.log("Error in send sol",error);
+                    throw new Error(`${error.message || error}`);
                 }
             }
 
@@ -137,6 +138,7 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
                     return signature ;
                 } catch (error) {
                     console.log("Token transfer failed:", error);
+                    throw new Error(`${error.message || error}`);
                 }
             }
 
@@ -289,8 +291,8 @@ def solana_create_stake_account(from_address: str, stake_account: str, amount: f
 
                 return signature;
             } catch (error) {
-                console.log("Error in withdrawl:", error);
-                throw error;
+                console.log("Create Stake Account failed:", error);
+                throw new Error(`${error.message || error}`);
             }
 
         }
@@ -331,8 +333,8 @@ def solana_delegate_stake(stake_account: str, vote_account: str) -> str:
 
                 return signature;
             } catch (error) {
-                console.log("Error in withdrawl:", error);
-                throw error;
+                console.log("Delegate Stake failed:", error);
+                throw new Error(`${error.message || error}`);
             }
         }
         """
@@ -368,8 +370,8 @@ def solana_deactivate_stake(stake_account: str) -> str:
 
                 return signature;
             } catch (error) {
-                console.log("Error in withdrawl:", error);
-                throw error;
+                console.log("Deactivating Stake failed:", error);
+                throw new Error(`${error.message || error}`);
             }
         }
         """
@@ -406,8 +408,8 @@ def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) ->
                 });
                 return signature;
             } catch (error) {
-                console.log("Error in withdrawl:", error);
-                throw error;
+                console.log("Withdrawl of stake failed:", error);
+                throw new Error(`${error.message || error}`);
             }
         }
         """
@@ -500,6 +502,7 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
                     return signature;
                 } catch (error) {
                     console.log("Jupiter swap failed:", error);
+                    throw new Error(`${error.message || error}`);
                 }
             
     }     
