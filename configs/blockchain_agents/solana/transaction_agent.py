@@ -1,4 +1,5 @@
 import requests
+from variables import SOLANA_SWAP_FEE_RATE, SOLANA_SWAP_FEE_SETELLMENT_ADDRESS
 
 def solana_send_solana(to_address: str, amount: float) -> str:
         if to_address is None or amount is None:
@@ -546,92 +547,150 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
     print(f"Amount: {amount} ({type(amount)})")
     print(f"Slippage: {slippage} ({type(slippage)})")
     print(f"Input Decimal: {input_decimal} ({type(input_decimal)})")
-    transaction_function_template = """
+    
+    function_code = f"""async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {{
+    try {{
+        const inputToken = "{input_token}";
+        const outputToken = "{output_token}";
+        const inputAmount = {amount} * Math.pow(10, {input_decimal});
+        const slippage = {slippage} * 100;
 
-   async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
-                try {
-                    const inpToken = "INPUT_TOKEN";
-                    const outToken = "OUTPUT_TOKEN";
-                    const amount = AMOUNT * Math.pow(10, INPUT_DECIMAL);
-                    const slippage = SLIPPAGE  * 100 ;
-            
-                    // Get quote
-                    const quoteResponse = await (
-                        await fetch(
-                            "https://quote-api.jup.ag/v6/quote?inputMint="+inpToken+"&outputMint="+outToken+"&amount="+amount+"&slippageBps="+slippage
-                        )
-                    ).json();
-            
-                    // Get swap transaction
-                    console.log("Priority Fee Amount",chainConfig.feeAmount)
-                    const { swapTransaction } = await (
-                        await fetch("https://quote-api.jup.ag/v6/swap", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                quoteResponse,
-                                userPublicKey: fromKeypair.publicKey.toString(),
-                                wrapAndUnwrapSol: true,
-	                            dynamicComputeUnitLimit: true, 
-                                prioritizationFeeLamports: parseInt(chainConfig.feeAmount) || 'auto'
-                            }),
-                        })
-                    ).json();
-            
-                    const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
-                    const transaction = web3.VersionedTransaction.deserialize(swapTransactionBuf);
-            
-                    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-                    transaction.recentBlockhash = blockhash;
-                    transaction.feePayer = fromKeypair.publicKey;
-                    
-                    // Sign the transaction
-                    transaction.sign([fromKeypair]);
-            
-                    const signature = await connection.sendRawTransaction(
-                      transaction.serialize(),
-                      // [fromKeypair],
-                      {
-                          skipPreflight: false,
-                          maxRetries: 5,
-                      }
-                  );
-            
-                    // Polling confirmation
-                    let confirmed = false;
-                    let retries = 30;
-                    while (!confirmed && retries > 0) {
-                        const status = await connection.getSignatureStatus(signature);
-                        console.log(retries,status);
-                        if (status?.value?.confirmationStatus === "confirmed") {
-                            confirmed = true;
-                            break;
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        retries--;
-                    }
-            
-                    if (!confirmed) {
-                        throw new Error("Transaction confirmation timeout");
-                    }
-            
-            
-                    return signature;
-                } catch (error) {
-                    console.log("Jupiter swap failed:", error);
-                    throw new Error(`${error.message || error}`);
-                }
-            
-    }     
+        const swapFeeRate = {SOLANA_SWAP_FEE_RATE}; // {SOLANA_SWAP_FEE_RATE*100}%
+        const swapFeeSettlementAccountAddress = "{SOLANA_SWAP_FEE_SETELLMENT_ADDRESS}";
 
+        const swapFeeAmount = inputAmount * swapFeeRate;
+        const swapAmount = inputAmount - swapFeeAmount;
 
-        """
-    float_amount = str(amount)
-    temporary_template = transaction_function_template
-    modified_code = temporary_template.replace("INPUT_TOKEN", input_token).replace("OUTPUT_TOKEN", output_token).replace("AMOUNT", str(float_amount)).replace("SLIPPAGE",str(slippage)).replace("INPUT_DECIMAL",str(float(input_decimal)))
-    modified_code_json = {
-            "modifiedCode": modified_code
-    }
-    #print(f"Generated modified code: {modified_code_json}")
-    print(modified_code)
-    return modified_code
+        const quoteURL = `https://quote-api.jup.ag/v6/quote?inputMint=${{inputToken}}&outputMint=${{outputToken}}&amount=${{swapAmount}}&slippageBps=${{slippage}}`;
+        const quoteResponse = await (await fetch(quoteURL)).json();
+        if (quoteResponse.error) {{
+        throw new Error("Error getting quote");
+        }}
+
+        if (!quoteResponse) {{
+        throw new Error("Error getting quote for swap");
+        }}
+
+        const {{ swapTransaction }} = await (
+        await fetch("https://quote-api.jup.ag/v6/swap", {{
+            method: "POST",
+            headers: {{
+            "Content-Type": "application/json",
+            }},
+            body: JSON.stringify({{
+            quoteResponse,
+            userPublicKey: fromKeypair.publicKey.toString(),
+            wrapAndUnwrapSol: true,
+            dynamicComputeUnitLimit: true,
+            prioritizationFeeLamports: parseInt(chainConfig.feeAmount) || "auto",
+            }}),
+        }})
+        ).json();
+
+        const swapTransactionBuf = Buffer.from(swapTransaction, "base64");
+        var transaction = web3.VersionedTransaction.deserialize(swapTransactionBuf);
+
+        let transferInstruction = null;
+        if (inputToken === web3_spl.NATIVE_MINT.toString()) {{
+        transferInstruction = web3.SystemProgram.transfer({{
+            fromPubkey: fromKeypair.publicKey,
+            toPubkey: new web3.PublicKey(swapFeeSettlementAccountAddress),
+            lamports: swapFeeAmount,
+        }});
+        }} else {{
+        const tokenMintPubkey = new web3.PublicKey(inputToken);
+
+        // Get or create the recipient's associated token account
+        const recipientTokenAccount =
+            await web3_spl.getOrCreateAssociatedTokenAccount(
+            connection,
+            fromKeypair,
+            tokenMintPubkey,
+            new web3.PublicKey(swapFeeSettlementAccountAddress)
+            );
+
+        const senderTokenAccount =
+            await web3_spl.getOrCreateAssociatedTokenAccount(
+            connection,
+            fromKeypair,
+            tokenMintPubkey,
+            fromKeypair.publicKey
+            );
+
+        transferInstruction = web3_spl.createTransferInstruction(
+            senderTokenAccount.address,
+            recipientTokenAccount.address,
+            fromKeypair.publicKey,
+            swapFeeAmount,
+            [],
+            web3_spl.TOKEN_PROGRAM_ID
+        );
+        }}
+
+        const addressLookupTableAccounts = await Promise.all(
+        transaction.message.addressTableLookups.map(async (lookup) => {{
+            return new web3.AddressLookupTableAccount({{
+            key: lookup.accountKey,
+            state: web3.AddressLookupTableAccount.deserialize(
+                await connection
+                .getAccountInfo(lookup.accountKey)
+                .then((res) => res.data)
+            ),
+            }});
+        }})
+        );
+
+        var message = web3.TransactionMessage.decompile(transaction.message, {{
+        addressLookupTableAccounts: addressLookupTableAccounts,
+        }});
+        message.instructions.push(transferInstruction);
+
+        transaction.message = message.compileToV0Message(
+        addressLookupTableAccounts
+        );
+
+        const {{ blockhash, lastValidBlockHeight }} =
+        await connection.getLatestBlockhash("confirmed");
+
+        // @ts-ignore
+        transaction.recentBlockhash = blockhash;
+        // @ts-ignore
+        transaction.feePayer = fromKeypair.publicKey;
+
+        // Sign the transaction
+        transaction.sign([fromKeypair]);
+
+        const signature = await connection.sendRawTransaction(
+        transaction.serialize(),
+        {{
+            skipPreflight: false,
+            maxRetries: 5,
+        }}
+        );
+
+        // Polling confirmation
+        let confirmed = false;
+        let retries = 30;
+        while (!confirmed && retries > 0) {{
+        const status = await connection.getSignatureStatus(signature);
+        console.log(retries, status);
+        if (status?.value?.confirmationStatus === "confirmed") {{
+            confirmed = true;
+            break;
+        }}
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        retries--;
+        }}
+
+        if (!confirmed) {{
+        throw new Error("Transaction confirmation timeout");
+        }}
+
+        console.log("Tx signature", signature);
+        return signature;
+    }} catch (error) {{
+        console.log("Jupiter swap failed:", error);
+        throw error;
+    }}
+}}"""
+    return function_code
