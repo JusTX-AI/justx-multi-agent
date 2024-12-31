@@ -1,5 +1,5 @@
 import requests
-from variables import SOLANA_SWAP_FEE_RATE, SOLANA_SWAP_FEE_SETELLMENT_ADDRESS
+from configs.variables import SOLANA_SWAP_FEE_RATE, SOLANA_SWAP_FEE_SETELLMENT_ADDRESS
 
 def solana_send_solana(to_address: str, amount: float) -> str:
         if to_address is None or amount is None:
