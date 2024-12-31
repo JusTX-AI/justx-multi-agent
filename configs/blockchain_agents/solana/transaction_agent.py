@@ -16,44 +16,42 @@ def solana_send_solana(to_address: str, amount: float) -> str:
                     toPubkey: new web3.PublicKey("RECIPIENT_ADDRESS"),
                     lamports: AMOUNT * web3.LAMPORTS_PER_SOL,
                 });
-            
-                const transaction = new web3.Transaction().add(transferInstruction);
-                const { blockhash } = await connection.getLatestBlockhash("confirmed");
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = fromKeypair.publicKey;
-                transaction.sign(fromKeypair);
-            
+
+                // Set compute unit limit and priority fee
+                const computeUnitLimit = chainConfig.computeUnitLimit;
+                const computeUnitPrice = chainConfig.computeUnitPrice;
+                const computeUnitInstruction = web3.ComputeBudgetProgram.setComputeUnitLimit({
+                    units: computeUnitLimit,
+                });
+                const addPriorityFeeInstruction = web3.ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: computeUnitPrice,
+                });
+
+                // Create transaction and add instructions
+                const transaction = new web3.Transaction()
+                    .add(transferInstruction)
+                    .add(computeUnitInstruction)
+                    .add(addPriorityFeeInstruction);
+
                 try {
-                    const signature = await connection.sendRawTransaction(
-                        transaction.serialize(),
+                    // Send and confirm transaction using the built-in method
+                    const signature = await web3.sendAndConfirmTransaction(
+                        connection,
+                        transaction,
+                        [fromKeypair],
                         {
                             skipPreflight: false,
-                            preflightCommitment: "confirmed",
+                            commitment: "confirmed",
+                            maxRetries: 30
                         }
                     );
-            
-                    let confirmed = false;
-                    let retries = 30;
                     
-                    while (!confirmed && retries > 0) {
-                        const status = await connection.getSignatureStatus(signature);
-                        if (status?.value?.confirmationStatus === "confirmed") {
-                            confirmed = true;
-                            break;
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        retries--;
-                    }
-                    if (!confirmed) {
-                        throw new Error("Transaction confirmation timeout");
-                    }
-                                return signature ;
+                    return signature;
                 } catch (error) {
                     console.log("Error in send sol",error);
                     throw new Error(`${error.message || error}`);
                 }
             }
-
             """
 
      
@@ -87,58 +85,102 @@ def solana_send_token(to_address: str, amount: float, token_mint: str) -> str:
                     const receiverPubKey = new web3.PublicKey("RECIPIENT_ADDRESS");
                     const mintPubKey = new web3.PublicKey("TOKEN_ADDRESS");
             
-                    const [senderTokenAccount, receiverTokenAccount] = await Promise.all([
-                        web3_spl.getOrCreateAssociatedTokenAccount(connection,fromKeypair,mintPubKey,fromKeypair.publicKey),
-                        web3_spl.getOrCreateAssociatedTokenAccount(connection,fromKeypair,mintPubKey,receiverPubKey)
-                    ]);
+                    // Utility to get or create associated token accounts manually
+                    const getOrCreateAssociatedTokenAccountSafe = async (connection, payer, mint, owner, splToken) => {
+                        const associatedTokenAddress = await splToken.getAssociatedTokenAddress(mint, owner);
+                        try {
+                            
+                            await splToken.getAccount(connection, associatedTokenAddress);
+                            return { address: associatedTokenAddress, newlyCreated: false };
+                        } catch (e) {
+                           
+                            const transaction = new web3.Transaction().add(
+                                splToken.createAssociatedTokenAccountInstruction(
+                                    payer.publicKey, // Payer of the transaction
+                                    associatedTokenAddress, // Address of the new token account
+                                    owner, // Owner of the token account
+                                    mint // Token mint
+                                )
+                            );
+                            await web3.sendAndConfirmTransaction(connection, transaction, [payer]);
+                            return { address: associatedTokenAddress, newlyCreated: true };
+                        }
+                    };
             
+                    // Get or create token accounts
+                    const senderTokenAccount = await web3_spl.getOrCreateAssociatedTokenAccount(
+                        connection,
+                        fromKeypair,
+                        mintPubKey,
+                        fromKeypair.publicKey
+                    );
+                    console.log("Sender token account: ", senderTokenAccount);
+            
+                    const receiverTokenAccount = await getOrCreateAssociatedTokenAccountSafe(
+                        connection,
+                        fromKeypair,
+                        mintPubKey,
+                        receiverPubKey,
+                        web3_spl
+                    );
+                    console.log("Receiver token account: ", receiverTokenAccount);
+            
+                    // Get account and mint info
                     const [senderTokenAccountInfo, mintInfo] = await Promise.all([
                         web3_spl.getAccount(connection, senderTokenAccount.address),
-                        web3_spl.getMint(connection, mintPubKey)
+                        web3_spl.getMint(connection, mintPubKey),
                     ]);
+                    console.log("Sender token account info: ", senderTokenAccountInfo);
+                    console.log("Mint info: ", mintInfo);
             
+                    // Check balance
                     const transferAmount = BigInt(Math.floor( AMOUNT * 10 ** mintInfo.decimals));
                     if (senderTokenAccountInfo.amount < transferAmount) {
                         throw new Error("Insufficient token balance");
                     }
             
-                    const transferInstruction = web3_spl.createTransferCheckedInstruction(senderTokenAccount.address,mintPubKey,receiverTokenAccount.address,fromKeypair.publicKey,transferAmount,mintInfo.decimals);
+                    // Create transfer instruction
+                    const transferInstruction = web3_spl.createTransferCheckedInstruction(
+                        senderTokenAccount.address,
+                        mintPubKey,
+                        receiverTokenAccount.address,
+                        fromKeypair.publicKey,
+                        transferAmount,
+                        mintInfo.decimals
+                    );
             
-                    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-                    const transaction = new web3.Transaction().add(transferInstruction);
-                    transaction.recentBlockhash = blockhash;
-                    transaction.feePayer = fromKeypair.publicKey;
-                    transaction.sign(fromKeypair);
+                    // Add compute unit limit and priority fee instructions
+                    const computeUnitLimit = chainConfig.computeUnitLimit;
+                    const computeUnitPrice = chainConfig.computeUnitPrice;
+                    const computeUnitInstruction = web3.ComputeBudgetProgram.setComputeUnitLimit({
+                        units: computeUnitLimit,
+                    });
+                    const addPriorityFeeInstruction = web3.ComputeBudgetProgram.setComputeUnitPrice({
+                        microLamports: computeUnitPrice,
+                    });
             
-                    const signature = await connection.sendTransaction(transaction,[fromKeypair],
+                    // Create and configure transaction
+                    const transaction = new web3.Transaction()
+                        .add(computeUnitInstruction)
+                        .add(addPriorityFeeInstruction)
+                        .add(transferInstruction);
+            
+                    // Send and confirm transaction
+                    const signature = await web3.sendAndConfirmTransaction(
+                        connection,
+                        transaction,
+                        [fromKeypair],
                         {
                             skipPreflight: false,
-                            preflightCommitment: "confirmed",
+                            commitment: "confirmed",
+                            maxRetries: 5
                         }
                     );
             
-                    // Polling confirmation
-                    let confirmed = false;
-                    let retries = 30;
-                    while (!confirmed && retries > 0) {
-                        const status = await connection.getSignatureStatus(signature);
-                        console.log(retries,status);
-                        if (status?.value?.confirmationStatus === "confirmed") {
-                            confirmed = true;
-                            break;
-                        }
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        retries--;
-                    }
-            
-                    if (!confirmed) {
-                        throw new Error("Transaction confirmation timeout");
-                    }
-            
-                    return signature ;
+                    return signature;
                 } catch (error) {
                     console.log("Token transfer failed:", error);
-                    throw new Error(`${error.message || error}`);
+                    throw new Error(error.message || error);
                 }
             }
 
@@ -160,94 +202,91 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
         vote_account = validator_identifier
         transaction_function_template = """
            async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
-                    
-                const stakeAccount = web3.Keypair.generate();
-                const rentExemptionAmount = await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space);
-
-                console.log("Rent Exemption amount: ", rentExemptionAmount);
-
-                const amountToStake = ( AMOUNT  * web3.LAMPORTS_PER_SOL) + rentExemptionAmount;
-
-                const createAccountTransaction = web3.StakeProgram.createAccount({
+                try {
+                  // Create new stake account keypair
+                  const stakeAccount = web3.Keypair.generate();
+                  
+                  // Calculate required lamports
+                  const minimumRent = await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space);
+                  const amountToStake = AMOUNT * web3.LAMPORTS_PER_SOL;
+                  const totalAmount = minimumRent + amountToStake;
+              
+                  // Create stake account instruction
+                  const createAccountTransaction = web3.StakeProgram.createAccount({
                     fromPubkey: fromKeypair.publicKey,
                     stakePubkey: stakeAccount.publicKey,
-                    authorized: {
-                    staker: fromKeypair.publicKey,
-                    withdrawer: fromKeypair.publicKey,
-                    },
-                    lamports: amountToStake,
-                });
-
-                const transaction = new web3.Transaction();
-                transaction.add(createAccountTransaction);
-
-                const { blockhash } = await connection.getLatestBlockhash();
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = fromKeypair.publicKey;
-
-                transaction.sign(fromKeypair, stakeAccount);
-
-                console.log("Sending create account transaction...");
-
-                const rawTransaction = transaction.serialize();
-                const signature = await connection.sendRawTransaction(rawTransaction, {
-                    skipPreflight: false,
-                    preflightCommitment: "confirmed",
-                });
-                console.log("Create account transaction sent with signature:", signature);
-
-                let status = null;
-                while (status === null || status.confirmationStatus !== 'confirmed') {
-                    const response = await connection.getSignatureStatus(signature);
-                    status = response.value;
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-
-                console.log("Transaction confirmed");
-
-                await new Promise(resolve => setTimeout(resolve, 5000));
-
-                const delegateTransaction = web3.StakeProgram.delegate({
+                    authorized: new web3.Authorized(fromKeypair.publicKey, fromKeypair.publicKey),
+                    lockup: new web3.Lockup(0, 0, fromKeypair.publicKey),
+                    lamports: totalAmount
+                  });
+              
+                  // Add compute unit limit and priority fee instructions
+                  const computeUnitLimit = chainConfig.computeUnitLimit;
+                  const computeUnitPrice = chainConfig.computeUnitPrice;
+                  const computeUnitInstruction = web3.ComputeBudgetProgram.setComputeUnitLimit({
+                    units: computeUnitLimit,
+                  });
+                  const addPriorityFeeInstruction = web3.ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: computeUnitPrice,
+                  });
+              
+                  // Create and send stake account creation transaction
+                  const createTransaction = new web3.Transaction()
+                    .add(computeUnitInstruction)
+                    .add(addPriorityFeeInstruction)
+                    .add(createAccountTransaction);
+              
+                  console.log("Sending create account transaction...");
+                  const createSignature = await web3.sendAndConfirmTransaction(
+                    connection,
+                    createTransaction,
+                    [fromKeypair, stakeAccount],
+                    {
+                      skipPreflight: false,
+                      commitment: "confirmed",
+                      maxRetries: 30
+                    }
+                  );
+                  console.log("Created stake account:", stakeAccount.publicKey.toString());
+                  console.log("Create transaction signature:", createSignature);
+              
+                  // Wait for confirmation and add some delay
+                  await new Promise(resolve => setTimeout(resolve, 5000));
+              
+                  // Create delegation transaction
+                  const delegateTransaction = web3.StakeProgram.delegate({
                     stakePubkey: stakeAccount.publicKey,
                     authorizedPubkey: fromKeypair.publicKey,
-                    votePubkey: new web3.PublicKey( "VALIDATOR_VOTE_ACCOUNT" ),
-                });
-
-                console.log("delegatetxn here:", delegateTransaction);
-
-                const delegateTx = new web3.Transaction();
-                delegateTx.add(delegateTransaction);
-
-                const { blockhash: delegateBlockhash } = await connection.getLatestBlockhash();
-                delegateTx.recentBlockhash = delegateBlockhash;
-                delegateTx.feePayer = fromKeypair.publicKey;
-
-                delegateTx.sign(fromKeypair);
-
-                console.log("Sending delegate transaction...");
-
-                const rawDelegateTransaction = delegateTx.serialize();
-                const delegateSignature = await connection.sendRawTransaction(rawDelegateTransaction, {
-                    skipPreflight: false,
-                    preflightCommitment: "confirmed",
-                });
-
-                status = null;
-                while (status === null || status.confirmationStatus !== 'confirmed') {
-                    const response = await connection.getSignatureStatus(delegateSignature);
-                    status = response.value;
-                    await new Promise(resolve => setTimeout(resolve, 1000)); 
+                    votePubkey: new web3.PublicKey("VALIDATOR_VOTE_ACCOUNT"),
+                  });
+              
+                  // Create and send delegation transaction
+                  const delegateTx = new web3.Transaction()
+                    .add(computeUnitInstruction)
+                    .add(addPriorityFeeInstruction)
+                    .add(delegateTransaction);
+              
+                  console.log("Sending delegate transaction...");
+                  const delegateSignature = await web3.sendAndConfirmTransaction(
+                    connection,
+                    delegateTx,
+                    [fromKeypair],
+                    {
+                      skipPreflight: false,
+                      commitment: "confirmed",
+                      maxRetries: 30
+                    }
+                  );
+                  
+                  console.log("Delegate transaction signature:", delegateSignature);
+              
+                  return delegateSignature;
+              
+                } catch (error) {
+                  console.error("Staking operation failed:", error);
+                  throw new Error("Staking failed:",error.message || error);
                 }
-
-                console.log("Delegate transaction sent with signature:", delegateSignature);
-
-                let result = { transactionHash: delegateSignature };
-
-                console.log("After result:", result, delegateSignature);
-
-                return result.transactionHash;
-
-            }
+              }
 
         """
 
@@ -264,12 +303,15 @@ def solana_create_and_delegate_stake(from_address: str, amount: float, validator
 def solana_create_stake_account(from_address: str, stake_account: str, amount: float) -> str:
     transaction_function_template = """
        async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
-
             try {
+                // Create new stake account keypair
                 const stakeAccount = new web3.Keypair();
+                
+                // Calculate required lamports
                 const minimumRent = await connection.getMinimumBalanceForRentExemption(web3.StakeProgram.space);
                 const amountToStake = AMOUNT * web3.LAMPORTS_PER_SOL;
 
+                // Create stake account instruction
                 const createAccountTransaction = web3.StakeProgram.createAccount({
                     fromPubkey: fromKeypair.publicKey,
                     stakePubkey: stakeAccount.publicKey,
@@ -278,24 +320,42 @@ def solana_create_stake_account(from_address: str, stake_account: str, amount: f
                     lamports: minimumRent + amountToStake
                 });
 
-                const transaction = new web3.Transaction().add(createAccountTransaction);
-                const { blockhash } = await connection.getLatestBlockhash("confirmed");
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = fromKeypair.publicKey;
-                transaction.sign(fromKeypair, stakeAccount);
-
-                const signature = await connection.sendRawTransaction(transaction.serialize(), {
-                skipPreflight: false,
-                preflightCommitment: "confirmed",
+                // Add compute unit limit and priority fee instructions
+                const computeUnitLimit = chainConfig.computeUnitLimit;
+                const computeUnitPrice = chainConfig.computeUnitPrice;
+                const computeUnitInstruction = web3.ComputeBudgetProgram.setComputeUnitLimit({
+                    units: computeUnitLimit,
+                });
+                const addPriorityFeeInstruction = web3.ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: computeUnitPrice,
                 });
 
+                // Create transaction and add all instructions
+                const transaction = new web3.Transaction()
+                    .add(computeUnitInstruction)
+                    .add(addPriorityFeeInstruction)
+                    .add(createAccountTransaction);
+
+                // Send and confirm transaction
+                const signature = await web3.sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [fromKeypair, stakeAccount], // Note: both keypairs needed for signing
+                    {
+                        skipPreflight: false,
+                        commitment: "confirmed",
+                        maxRetries: 30
+                    }
+                );
+
+                console.log("Created stake account:", stakeAccount.publicKey.toString());
                 return signature;
             } catch (error) {
-                console.log("Create Stake Account failed:", error);
-                throw new Error(`${error.message || error}`);
-            }
-
+                        console.log("Create Stake Account failed:", error);
+                        throw new Error(`${error.message || error}`);
+                    }
         }
+
         """
 
     temporary_template = transaction_function_template
@@ -311,32 +371,49 @@ def solana_delegate_stake(stake_account: str, vote_account: str) -> str:
     transaction_function_template = """
         async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
             try {
+                // Create delegation instruction
                 const delegateTransaction = web3.StakeProgram.delegate({
                     stakePubkey: new web3.PublicKey("STAKE_ACCOUNT"),
                     authorizedPubkey: fromKeypair.publicKey,
                     votePubkey: new web3.PublicKey("VOTE_ACCOUNT"),
                 });
 
-                const transaction = new web3.Transaction().add(delegateTransaction);
-                const { blockhash } = await connection.getLatestBlockhash("confirmed");
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = fromKeypair.publicKey;
-                transaction.sign(fromKeypair);
+                // Add compute unit limit and priority fee instructions
+                const computeUnitLimit = chainConfig.computeUnitLimit;
+                const computeUnitPrice = chainConfig.computeUnitPrice;
+                const computeUnitInstruction = web3.ComputeBudgetProgram.setComputeUnitLimit({
+                    units: computeUnitLimit,
+                });
+                const addPriorityFeeInstruction = web3.ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: computeUnitPrice,
+                });
 
-                const signature = await connection.sendRawTransaction(
-                transaction.serialize(),
-                {
-                    skipPreflight: false,
-                    preflightCommitment: "confirmed",
-                }
+                // Create transaction and add all instructions
+                const transaction = new web3.Transaction()
+                    .add(computeUnitInstruction)
+                    .add(addPriorityFeeInstruction)
+                    .add(delegateTransaction);
+
+                // Send and confirm transaction
+                const signature = await web3.sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [fromKeypair],
+                    {
+                        skipPreflight: false,
+                        commitment: "confirmed",
+                        maxRetries: 30
+                    }
                 );
 
+                console.log("Successfully delegated stake account");
                 return signature;
             } catch (error) {
-                console.log("Delegate Stake failed:", error);
-                throw new Error(`${error.message || error}`);
-            }
+                        console.log("Delegate Stake failed:", error);
+                        throw new Error(`${error.message || error}`);
+                    }
         }
+
         """
 
     temporary_template = transaction_function_template
@@ -352,28 +429,48 @@ def solana_deactivate_stake(stake_account: str) -> str:
     transaction_function_template = """
        async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
             try {
+                // Create deactivation instruction
                 const deactivateTransaction = web3.StakeProgram.deactivate({
                     stakePubkey: new web3.PublicKey('STAKE_ACCOUNT'),
                     authorizedPubkey: fromKeypair.publicKey,
                 });
 
-                const transaction = new web3.Transaction().add(deactivateTransaction);
-                const { blockhash } = await connection.getLatestBlockhash("confirmed");
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = fromKeypair.publicKey;
-                transaction.sign(fromKeypair);
-                
-                const signature = await connection.sendRawTransaction(transaction.serialize(), {
-                skipPreflight: false,
-                preflightCommitment: "confirmed",
+                // Add compute unit limit and priority fee instructions
+                const computeUnitLimit = chainConfig.computeUnitLimit;
+                const computeUnitPrice = chainConfig.computeUnitPrice;
+                const computeUnitInstruction = web3.ComputeBudgetProgram.setComputeUnitLimit({
+                    units: computeUnitLimit,
+                });
+                const addPriorityFeeInstruction = web3.ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: computeUnitPrice,
                 });
 
+                // Create transaction and add all instructions
+                const transaction = new web3.Transaction()
+                    .add(computeUnitInstruction)
+                    .add(addPriorityFeeInstruction)
+                    .add(deactivateTransaction);
+
+                // Send and confirm transaction
+                const signature = await web3.sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [fromKeypair],
+                    {
+                        skipPreflight: false,
+                        commitment: "confirmed",
+                        maxRetries: 30
+                    }
+                );
+
+                console.log("Successfully deactivated stake account");
                 return signature;
             } catch (error) {
-                console.log("Deactivating Stake failed:", error);
-                throw new Error(`${error.message || error}`);
-            }
+                        console.log("Deactivating Stake failed:", error);
+                        throw new Error(`${error.message || error}`);
+                    }
         }
+
         """
 
     temporary_template = transaction_function_template
@@ -389,6 +486,7 @@ def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) ->
     transaction_function_template = """
         async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {
             try {
+                // Create withdrawal instruction
                 const withdrawTransaction = web3.StakeProgram.withdraw({
                     stakePubkey: new web3.PublicKey('STAKE_ACCOUNT'),
                     authorizedPubkey: fromKeypair.publicKey,
@@ -396,21 +494,40 @@ def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) ->
                     lamports: STAKE_AMOUNT
                 });
 
-                const transaction = new web3.Transaction().add(withdrawTransaction);
-                const { blockhash } = await connection.getLatestBlockhash("confirmed");
-                transaction.recentBlockhash = blockhash;
-                transaction.feePayer = fromKeypair.publicKey;
-                transaction.sign(fromKeypair);
-
-                const signature = await connection.sendRawTransaction(transaction.serialize(), {
-                skipPreflight: false,
-                preflightCommitment: "confirmed",
+                // Add compute unit limit and priority fee instructions
+                const computeUnitLimit = chainConfig.computeUnitLimit;
+                const computeUnitPrice = chainConfig.computeUnitPrice;
+                const computeUnitInstruction = web3.ComputeBudgetProgram.setComputeUnitLimit({
+                    units: computeUnitLimit,
                 });
+                const addPriorityFeeInstruction = web3.ComputeBudgetProgram.setComputeUnitPrice({
+                    microLamports: computeUnitPrice,
+                });
+
+                // Create transaction and add all instructions
+                const transaction = new web3.Transaction()
+                    .add(computeUnitInstruction)
+                    .add(addPriorityFeeInstruction)
+                    .add(withdrawTransaction);
+
+                // Send and confirm transaction
+                const signature = await web3.sendAndConfirmTransaction(
+                    connection,
+                    transaction,
+                    [fromKeypair],
+                    {
+                        skipPreflight: false,
+                        commitment: "confirmed",
+                        maxRetries: 30
+                    }
+                );
+
+                console.log("Successfully withdrew from stake account");
                 return signature;
             } catch (error) {
-                console.log("Withdrawl of stake failed:", error);
-                throw new Error(`${error.message || error}`);
-            }
+                        console.log("Withdrawl of stake failed:", error);
+                        throw new Error(`${error.message || error}`);
+                    }
         }
         """
 
