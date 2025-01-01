@@ -552,13 +552,13 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
     try {{
         const inputToken = "{input_token}";
         const outputToken = "{output_token}";
-        const inputAmount = {amount} * Math.pow(10, {input_decimal});
+        const inputAmount = Math.floor({amount} * Math.pow(10, {input_decimal}));
         const slippage = {slippage} * 100;
 
         const swapFeeRate = {SOLANA_SWAP_FEE_RATE}; // {SOLANA_SWAP_FEE_RATE*100}%
         const swapFeeSettlementAccountAddress = "{SOLANA_SWAP_FEE_SETELLMENT_ADDRESS}";
 
-        const swapFeeAmount = inputAmount * swapFeeRate;
+        const swapFeeAmount = Math.floor(inputAmount * swapFeeRate);
         const swapAmount = inputAmount - swapFeeAmount;
 
         const quoteURL = `https://quote-api.jup.ag/v6/quote?inputMint=${{inputToken}}&outputMint=${{outputToken}}&amount=${{swapAmount}}&slippageBps=${{slippage}}`;
