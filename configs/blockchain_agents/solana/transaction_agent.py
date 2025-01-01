@@ -599,6 +599,12 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
         }});
         }} else {{
         const tokenMintPubkey = new web3.PublicKey(inputToken);
+        const tokenAccountInfo = await connection.getAccountInfo(tokenMintPubkey);
+
+        let tokenProgramId = web3_spl.TOKEN_PROGRAM_ID;
+        if (tokenAccountInfo?.owner.toBase58() === web3_spl.TOKEN_2022_PROGRAM_ID.toBase58()) {{
+            tokenProgramId = web3_spl.TOKEN_2022_PROGRAM_ID;
+        }}
 
         // Get or create the recipient's associated token account
         const recipientTokenAccount =
@@ -606,7 +612,16 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
             connection,
             fromKeypair,
             tokenMintPubkey,
-            new web3.PublicKey(swapFeeSettlementAccountAddress)
+            new web3.PublicKey(swapFeeSettlementAccountAddress),
+            false,
+            "confirmed",
+            {{
+                commitment: "confirmed",
+                skipPreflight: false,
+                maxRetries: 5,
+            }},
+            tokenProgramId,
+            web3_spl.ASSOCIATED_TOKEN_PROGRAM_ID
             );
 
         const senderTokenAccount =
@@ -614,7 +629,16 @@ def solana_swap(input_token: str, output_token: str, amount: float, slippage: fl
             connection,
             fromKeypair,
             tokenMintPubkey,
-            fromKeypair.publicKey
+            fromKeypair.publicKey,
+            false,
+            "confirmed",
+            {{
+                commitment: "confirmed",
+                skipPreflight: false,
+                maxRetries: 5,
+            }},
+            tokenProgramId,
+            web3_spl.ASSOCIATED_TOKEN_PROGRAM_ID
             );
 
         transferInstruction = web3_spl.createTransferInstruction(
