@@ -11,6 +11,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from redis import Redis
 import pickle
 import os
+from configs.blockchain_agents.solana.transaction_agent import solana_swap
 
 # Configure logging
 logging.basicConfig(
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Configure Redis and MongoDB
+#Configure Redis and MongoDB
 redis_client = Redis(
     host=os.getenv('REDIS_HOST', 'localhost'),
     port=int(os.getenv('REDIS_PORT', 6379)),
@@ -33,6 +34,7 @@ redis_client = Redis(
     password=os.getenv('REDIS_PASSWORD')
 )
 mongo_client = AsyncIOMotorClient(os.getenv('MONGODB_URI'))
+
 db = mongo_client.justx_db
 sessions_collection = db.sessions
 
@@ -64,6 +66,9 @@ class SessionState:
         session.messages = data['messages']
         session.last_updated = data['last_updated']
         return session
+    
+
+
 
 # Initialize the Swarm client
 client = Swarm()
@@ -137,6 +142,7 @@ async def save_session(chat_id: str, session: SessionState):
 async def run_agent(user_input: UserInput):
     request_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     logger.info(f"Request {request_id} received with input: {user_input}")
+    print(user_input)
 
     # Get or create session state
     session = await get_session(user_input.chat_id)
@@ -154,6 +160,7 @@ async def run_agent(user_input: UserInput):
                 messages=session.messages,
                 stream=True,
                 debug=user_input.debug,
+              #  model_override="gpt-4o-mini"
             )
             return EventSourceResponse(stream_generator(response))
         else:
@@ -163,6 +170,7 @@ async def run_agent(user_input: UserInput):
                 messages=session.messages,
                 stream=False,
                 debug=user_input.debug,
+             #   model_override="gpt-4o-mini"
             )
             
             # Update session with response
@@ -177,6 +185,117 @@ async def run_agent(user_input: UserInput):
                 "chat_id": user_input.chat_id,
                 "agent": session.agent.name
             }
+            # Check if response contains solana_swap parameters
+            # Only execute swap if response contains valid solana_swap parameters
+            last_message = response.messages[-1]
+            swap_params = None
+            
+            def extract_json_from_text(text):
+                try:
+                    # Find anything that looks like JSON using regex
+                    import re
+                    json_pattern = r'\{(?:[^{}]|(?R))*\}'
+                    potential_jsons = re.finditer(json_pattern, text)
+                    
+                    for match in potential_jsons:
+                        try:
+                            parsed = json.loads(match.group())
+                            if "solana_swap" in str(parsed).lower():
+                                return parsed
+                        except:
+                            continue
+                    return None
+                except:
+                    return None
+
+            # Get content in various formats
+            if isinstance(last_message, dict):
+                content = last_message.get("content", "")
+            else:
+                content = str(last_message)
+
+            # Multiple attempts to find swap parameters
+            try:
+                # Attempt 1: Direct JSON parsing if content is string
+                if isinstance(content, str):
+                    try:
+                        # Remove markdown code block syntax if present
+                        content = content.replace("```json", "").replace("```", "").strip()
+                        parsed_content = json.loads(content)
+                        if isinstance(parsed_content, dict):
+                            content = parsed_content
+                    except:
+                        # If direct parsing fails, try to extract JSON from text
+                        extracted = extract_json_from_text(content)
+                        if extracted:
+                            content = extracted
+
+                # Attempt 2: Check dictionary format
+                if isinstance(content, dict):
+                    if content.get("name") == "solana_swap":
+                        swap_params = content.get("parameters")
+                    elif "solana_swap" in str(content).lower():
+                        # Check various possible parameter locations
+                        possible_params = [
+                            content.get("parameters"),
+                            content.get("solana_swap"),
+                            content.get("params"),
+                            content
+                        ]
+                        for params in possible_params:
+                            if isinstance(params, dict) and all(key in params for key in ["input_token_address", "output_token_address", "amount"]):
+                                swap_params = params
+                                break
+
+                # Attempt 3: Search in nested structures
+                if not swap_params and isinstance(content, str):
+                    extracted = extract_json_from_text(content)
+                    if extracted:
+                        if extracted.get("name") == "solana_swap":
+                            swap_params = extracted.get("parameters")
+                        elif isinstance(extracted, dict):
+                            swap_params = extracted
+
+                # Attempt 4: Search through all messages if not found yet
+                if not swap_params:
+                    for msg in response.messages:
+                        if isinstance(msg, dict) and msg.get("content"):
+                            try:
+                                msg_content = msg["content"].replace("```json", "").replace("```", "").strip()
+                                parsed = json.loads(msg_content)
+                                if parsed.get("name") == "solana_swap":
+                                    swap_params = parsed.get("parameters")
+                                    break
+                            except:
+                                continue
+
+            except Exception as e:
+                logger.error(f"Error parsing swap parameters: {str(e)}")
+                # Continue execution even if parsing fails
+                pass
+
+            # Final validation of swap_params
+            if swap_params and isinstance(swap_params, dict):
+                required_keys = ["input_token_address", "output_token_address", "amount"]
+                if not all(key in swap_params for key in required_keys):
+                    swap_params = None
+
+            if swap_params:
+                # Execute swap with parameters
+                swap_result = solana_swap(
+                    input_token=swap_params["input_token_address"],
+                    output_token=swap_params["output_token_address"], 
+                    amount=swap_params["amount"],
+                    slippage=swap_params["slippage"]
+                )
+                if "transaction_functions" not in result:
+                    result["transaction_functions"] = {}
+                result["transaction_functions"]["solana_swap"] = swap_result
+                print(swap_result)
+###################################@
+
+            print(session.agent.name)
+            print(result)
             return result
     except Exception as e:
         logger.error(f"Request {request_id} - Error processing request: {str(e)}", exc_info=True)

@@ -255,7 +255,6 @@ solana_swap_agent = Agent(
     name="Solana Swap Agent",
     instructions=SOLANA_SWAP_INSTRUCTIONS,
     functions=[
-        solana_swap,
         transfer_to_coordinator_agent,
         transfer_to_solana_coordinator_agent,
         transfer_to_solana_send_sol_agent,

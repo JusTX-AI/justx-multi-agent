@@ -60,24 +60,25 @@ def transfer_to_dexscreener_agent(coin_name: str) -> str:
             token = matches[0]
             return f"Contract address for {token['name']}: {token['address']}\nToken name: {token['name']}"
         else:
-            # If not found in Jupiter, try DexScreener API
-            url = f"https://api.dexscreener.com/latest/dex/search?q={coin_name}"
+            # If not found in Jupiter, try searching from another Jupiter API endpoint
+            url = "https://token.jup.ag/all"
             try:
                 response = requests.get(url)
                 response.raise_for_status()
-                data = response.json()
+                tokens = response.json()
                 
-                if 'pairs' in data and len(data['pairs']) > 0:
-                    for pair in data['pairs']:
-                        if pair['baseToken']['symbol'].lower() == coin_name.lower():
-                            contract_address = pair['baseToken']['address']
-                            base_token_name = pair['baseToken']['name']
-                            return f"Contract address for {coin_name}: {contract_address}\nBase token name: {base_token_name}"
-                    
-                    # If no exact match found, return the first result
-                    contract_address = data['pairs'][0]['baseToken']['address']
-                    base_token_name = data['pairs'][0]['baseToken']['name']
-                    return f"Contract address for {coin_name} (closest match): {contract_address}\nBase token name: {base_token_name}"
+                # Search for token by name or symbol (case insensitive)
+                matches = []
+                search_term = coin_name.lower()
+                for token in tokens:
+                    if (search_term in token['name'].lower() or 
+                        search_term in token['symbol'].lower()):
+                        matches.append(token)
+
+                if matches:
+                    # Return first match
+                    token = matches[0]
+                    return f"Contract address for {token['name']}: {token['address']}\nToken name: {token['name']}"
                 else:
                     return f"No results found for {coin_name}."
             except requests.RequestException:

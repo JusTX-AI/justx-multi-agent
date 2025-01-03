@@ -1,5 +1,5 @@
 import requests
-from configs.variables import SOLANA_SWAP_FEE_RATE, SOLANA_SWAP_FEE_SETELLMENT_ADDRESS
+from configs.variables import SOLANA_SWAP_FEE_RATE, SOLANA_SWAP_FEE_SETELLMENT_ADDRESS, TOKEN_METADATA_URL
 
 def solana_send_solana(to_address: str, amount: float) -> str:
         if to_address is None or amount is None:
@@ -541,11 +541,16 @@ def solana_withdraw_stake(stake_account: str, to_address: str, amount: float) ->
     print(modified_code)
     return modified_code
 
-def solana_swap(input_token: str, output_token: str, amount: float, slippage: float, input_decimal: float) -> str:
+def solana_swap(input_token: str, output_token: str, amount: float, slippage: float) -> str:
     print(f"Input Token: {input_token} ({type(input_token)})")
     print(f"Output Token: {output_token} ({type(output_token)})")
     print(f"Amount: {amount} ({type(amount)})")
     print(f"Slippage: {slippage} ({type(slippage)})")
+    # Fetch token metadata to get decimals
+    token_metadata_url = TOKEN_METADATA_URL.format(mint=input_token)
+    token_metadata_response = requests.get(token_metadata_url)
+    token_metadata = token_metadata_response.json()
+    input_decimal = token_metadata['decimals']
     print(f"Input Decimal: {input_decimal} ({type(input_decimal)})")
     
     function_code = f"""async (connection, web3, Buffer, fromKeypair, chainConfig, web3_spl) => {{
